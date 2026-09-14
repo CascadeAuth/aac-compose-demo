@@ -146,12 +146,12 @@ refused with HTTP 401 before any handler runs.
 ## What was measured
 
 Timings are measured, not promised; they depend on your network and your
-sign-in speed. `./starter status` prints the timings of your own runs.
+sign-in speed. `./starter status` prints the timings of your own runs (kept per workspace under `.starter/`).
 
 | Environment | Guided setup (`aac init`, two browser sign-ins included) | Image download and build | Start until ready | Trust visible | Exercise | First authenticated success |
 |---|---|---|---|---|---|---|
 | Ubuntu 24.04 VM, arm64, Docker Engine 29.1, Compose 2.40 — fresh machine, new tenant | 247 s | 21 s (cold: every image removed first; 18 s with two of three images present) | 6–7 s at first start; 16–17 s when `./starter up` recreates a running stack | 0–1 s | 0–1 s | about 4.6 minutes, sign-ins included |
-| macOS 15, Apple silicon, Docker Desktop 29.7, Compose 5.5 — existing tenant, repeat runs | 0–3 s (already complete) | 13 s with cached images (the cold pull of the sidecar and publisher images on that network was timed separately at 6 min 39 s and 6 min 42 s) | 6–10 s | 0–1 s | 0–1 s | under 30 s |
+| macOS 26, Apple silicon, Docker Desktop 29.7, Compose 5.5 — existing tenant, repeat runs | 0–3 s (already complete) | 13 s with cached images (the cold pull of the sidecar and publisher images on that network was timed separately at 6 min 39 s and 6 min 42 s) | 6–10 s | 0–1 s | 0–1 s | under 30 s |
 
 The numbers come from `docs/evidence/` (the live test harness in `tests/live/`
 writes one file per platform; each machine's complete timing log and a note on
@@ -267,12 +267,12 @@ pairing authentication the `aac-invoke-auth` package documents.
 | `./starter up` | Starts the stack, waits for readiness and for the published trust material |
 | `./starter exercise` | One complete workflow with local evidence and the A2A retry |
 | `./starter check` | Readiness, refusal probes, published trust material |
-| `./starter status` | The CLI's workspace report, running containers, measured timings |
+| `./starter status` | The CLI's workspace report, running containers, this workspace's measured timings |
 | `./starter retry` | Resends the last A2A dispatch and checks the retained result |
 | `./starter build` | Rebuilds the sample agent image after you edit `agent/` |
 | `./starter logs [service]` | Follows the containers' logs |
 | `./starter down` | Stops and removes the containers; keeps the tenant, workspace and state |
-| `./starter clean` | Also removes the local agent image and `.starter/`; never touches `~/.aac` |
+| `./starter clean` | Also removes the local agent image (shared by every workspace) and this workspace's `.starter/<workspace>/`; never touches `~/.aac` |
 
 Environment variables: `AAC_STARTER_PROFILE` (CLI profile, default `stage`),
 `AAC_STARTER_WORKSPACE` (default `starter`), `AAC_CLI_HOME` (relocates

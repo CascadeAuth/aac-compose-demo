@@ -10,7 +10,7 @@
 #   ./starter build      rebuild the sample agent image after editing agent/
 #   ./starter logs       follow the containers' logs
 #   ./starter down       stop and remove the containers; keep everything else
-#   ./starter clean      also remove the local agent image and ./.starter
+#   ./starter clean      also remove the local agent image and this workspace's ./.starter files
 #
 # The script never generates, edits or reads private material: `aac init`
 # and `aac workspace` own every key, certificate and configuration file, and
@@ -19,7 +19,6 @@ set -euo pipefail
 
 STARTER_DIR="$(cd "$(dirname "$0")" && pwd)"
 RUNTIME_DIR="$STARTER_DIR/.starter"
-TIMINGS_FILE="$RUNTIME_DIR/timings"
 
 # AAC stage: the hosted developer-beta control plane this starter targets.
 AAC_STARTER_ADMIN_URL="${AAC_STARTER_ADMIN_URL:-https://api.stage.cascadeauth.dev}"
@@ -39,14 +38,16 @@ COMPOSE_ENV="$CLI_HOME/workspaces/$AAC_STARTER_WORKSPACE/compose.env"
 # One Compose project and one exercise directory per workspace, so two
 # tenants' stacks never share containers or saved dispatches.
 COMPOSE_PROJECT="aac-$AAC_STARTER_WORKSPACE"
-EXERCISE_DIR="$RUNTIME_DIR/$AAC_STARTER_WORKSPACE/exercise"
+WORKSPACE_RUNTIME_DIR="$RUNTIME_DIR/$AAC_STARTER_WORKSPACE"
+EXERCISE_DIR="$WORKSPACE_RUNTIME_DIR/exercise"
+TIMINGS_FILE="$WORKSPACE_RUNTIME_DIR/timings"
 
 say()  { printf '%s\n' "$*" >&2; }
 fail() { say "starter: $*"; exit 1; }
 now()  { date +%s; }
 
 record_timing() {  # record_timing <label> <seconds>
-  mkdir -p "$RUNTIME_DIR"
+  mkdir -p "$WORKSPACE_RUNTIME_DIR"
   printf '%s %s %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$1" "$2" >> "$TIMINGS_FILE"
   say "  measured: $1 took ${2}s"
 }
@@ -311,8 +312,9 @@ cmd_down() {
 cmd_clean() {
   cmd_down
   docker image rm aac-compose-starter-agent:local >/dev/null 2>&1 || true
-  rm -rf "$RUNTIME_DIR"
-  say "Removed the local agent image and $RUNTIME_DIR. Nothing under $CLI_HOME was touched."
+  rm -rf "$WORKSPACE_RUNTIME_DIR"
+  rmdir "$RUNTIME_DIR" 2>/dev/null || true
+  say "Removed the local agent image (shared by every workspace) and $WORKSPACE_RUNTIME_DIR. Nothing under $CLI_HOME was touched."
 }
 
 cmd_help() { awk 'NR > 1 { if ($0 !~ /^#/) exit; sub(/^# ?/, ""); print }' "$0" >&2; }

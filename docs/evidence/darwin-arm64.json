@@ -7,24 +7,24 @@
   "docker": "29.7.2",
   "compose": "5.5.0",
   "aac_cli": "aac 0.1.5",
-  "measured_utc": "2026-09-14T20:30:52Z",
+  "measured_utc": "2026-09-14T20:38:28Z",
   "steps": {
-    "setup_repeat_s": 6.2,
-    "up_s": 7.2,
+    "setup_repeat_s": 2.9,
+    "up_s": 7.1,
     "up_measured": {
       "start until the sidecar is ready": "7",
       "trust publication visible": "0"
     },
     "exercise_s": 0.3,
     "exercise": {
-      "task_ref": "starter-5dc8c1cf-1e62-4caa-9a91-52d9eb72ad1b",
-      "root_token_id": "5a74a94c51fa6cfb00a2ea16b1749552ff451a9a4aa8c6c618c3288984e16c71",
+      "task_ref": "starter-2fb2d2a5-16e0-4a27-bbce-9e1b20c299c8",
+      "root_token_id": "e0ced11585e6875f0782cf33a60ae21769b9868c162c5863f8d591d72a762152",
       "native_delivery": "delivered",
-      "a2a_dispatch_id": "3b051a23-a581-4796-9507-ceaa31dbd5a0",
+      "a2a_dispatch_id": "034a5806-ea81-4e53-b942-6f9423890c80",
       "a2a_retry": "same response bytes",
       "durations_ms": {
         "mint_to_settle": 5,
-        "a2a": 3,
+        "a2a": 5,
         "a2a_retry": 1
       },
       "local_evidence": {
@@ -44,14 +44,14 @@
       "replay_profile": "basic",
       "replay_backend": "memory"
     },
-    "up_after_recreate_s": 7.2,
+    "up_after_recreate_s": 7.0,
     "identity_after_recreate": {
       "tenant_id": "tnt-97d0232e-ccb7-4642-b959-ad761f8e0f8d",
       "hosted_trust_domain": "tnt-97d0232e-ccb7-4642-b959-ad761f8e0f8d.tenants.stage.cascadeauth.dev",
       "workload_spiffe_id": "spiffe://tnt-97d0232e-ccb7-4642-b959-ad761f8e0f8d.tenants.stage.cascadeauth.dev/demo/agent",
       "root_key_id": "starter-root-v1"
     },
-    "up_after_rebuild_s": 10.7,
+    "up_after_rebuild_s": 10.1,
     "missing_credential": "refused; the CLI report was shown"
   }
 }

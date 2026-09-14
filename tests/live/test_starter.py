@@ -140,7 +140,7 @@ def test_04_check_probes_refusals(evidence):
 
 
 def test_05_no_ports_are_published_and_loopback_stays_private():
-    names = subprocess.run(["docker", "ps", "--filter", f"name=aac-{WORKSPACE}-", "--format", "{{.Names}}"],
+    names = subprocess.run(["docker", "ps", "--filter", f"label=com.docker.compose.project=aac-{WORKSPACE}", "--format", "{{.Names}}"],
                            capture_output=True, text=True).stdout.split()
     assert len(names) == 3, names
     for name in names:
@@ -153,7 +153,7 @@ def test_05_no_ports_are_published_and_loopback_stays_private():
 
 def test_06_recreate_keeps_identity_and_retained_results(evidence):
     starter("down")
-    assert not subprocess.run(["docker", "ps", "-q", "--filter", "name=aac-starter-"], capture_output=True, text=True).stdout.strip()
+    assert not subprocess.run(["docker", "ps", "-q", "--filter", f"label=com.docker.compose.project=aac-{WORKSPACE}"], capture_output=True, text=True).stdout.strip()
     result = starter("up")
     evidence["steps"]["up_after_recreate_s"] = result.elapsed
     retry = last_json(starter("retry").stdout)
