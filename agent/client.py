@@ -1,24 +1,9 @@
-"""The example client: drives one complete workflow through the sidecar.
+"""The example client: starts one task through the AAC sidecar and shows what each piece did.
 
-It runs inside the agent's network namespace (``./starter exercise``), where
-the sidecar's local APIs are reachable, and prints correlation identifiers,
-outcomes and measured durations. It never prints a secret.
-
-Modes:
-
-* ``exercise`` — mint a root authority for a synthetic task; the sidecar
-  invokes the agent, which forwards to itself with a narrower restriction,
-  receives, and settles with a signed terminal attestation. Then send one
-  unary A2A request through the sidecar and repeat it with the same dispatch
-  id, which must return the retained result byte for byte. Finally correlate
-  the local telemetry with the returned root token id.
-* ``retry`` — resend the A2A dispatch saved by the last ``exercise``; the
-  bytes must still match. Run it after a restart to see retained results
-  survive the container.
-* ``probe`` — prove the refusals: unsigned and wrongly signed calls to the
-  agent's protected routes are rejected before any handler runs, and an
-  unknown class of action is refused by the sidecar.
-* ``wait`` — wait until the sidecar reports ready.
+`./starter exercise` runs it inside the agent's network, where the sidecar's
+local ports are. Every line it prints comes from what the sidecar returned or
+wrote to its local record of events; read it next to "How it works" in the
+README.
 """
 
 import json
@@ -32,269 +17,128 @@ from pathlib import Path
 import httpx
 from aac_invoke_auth import sign_invoke_request
 
-LOOPBACK = "http://127.0.0.1:8080"  # the sidecar's local API
-EXTERNAL = "https://127.0.0.1:9443"  # the sidecar's TLS listener (originator entry)
-AGENT = "http://127.0.0.1:8000"  # the sample agent
-A2A_DISPATCH_PATH = "/v1/agent/a2a/dispatch"
-ENVELOPE_SCHEMA = "aac.a2a.egress.v1"
-SAVED_DISPATCH = "last-a2a-dispatch.json"
+SIDECAR_TLS = "https://127.0.0.1:9443"  # where work starts: the sidecar's TLS listener
+SIDECAR_API = "http://127.0.0.1:8080"  # the sidecar's local API, for its own agent
+AGENT = "http://127.0.0.1:8000"  # the agent itself
+
+PAIRING_SECRET = Path(os.environ["AAC_INVOKE_AUTH_SECRET_FILE"]).read_bytes().strip()
+DEV_CA = os.environ["AAC_STARTER_CA_FILE"]  # issued the sidecar's TLS certificate
+EVENTS = Path(os.environ["AAC_STARTER_EVIDENCE_FILE"])  # the sidecar's record, one JSON event per line
 
 
-def millis(started: float) -> int:
-    return int((time.monotonic() - started) * 1000)
+def show(step: str, text: str) -> None:
+    print(f"{step:<8}  {text}")
 
 
-def synthetic_originator() -> dict:
-    # Explicitly synthetic: not a sign-in. A real originator takes these
-    # fields from its authenticated application context.
-    return {
-        "iss": "https://synthetic.invalid",
-        "sub": "starter-only",
-        "auth_time_unix_seconds": int(time.time()),
-    }
+def start_task(task: str) -> dict:
+    """Ask the sidecar to start a task. It mints the root authority and runs the whole flow.
 
-
-def mint(originator: httpx.Client, task: str) -> dict:
-    response = originator.post(
-        "/v1/agent/mint-root",
+    The person the work is done for is synthetic here; a real application
+    passes the signed-in user. The class of action names a policy in the
+    sidecar's configuration, and the payload is what the agent will see.
+    """
+    response = httpx.post(
+        SIDECAR_TLS + "/v1/agent/mint-root",
+        verify=ssl.create_default_context(cafile=DEV_CA),
+        timeout=60,
         json={
-            "human_originator": synthetic_originator(),
+            "human_originator": {"iss": "https://synthetic.invalid", "sub": "starter-only",
+                                 "auth_time_unix_seconds": int(time.time())},
             "class_of_action": "demo_verify",
             "task_ref": task,
             "payload": {"step": "forward"},
         },
     )
     response.raise_for_status()
-    minted = response.json()
-    if minted.get("delivery_status") != "delivered":
-        raise RuntimeError("native workflow was not delivered: " + json.dumps(minted))
-    return minted
+    return response.json()
 
 
-def a2a_envelope(task: str, destination_profile: str) -> dict:
-    return {
-        "schema_version": ENVELOPE_SCHEMA,
+def recorded_events(root_token_id: str) -> dict:
+    """What the sidecar recorded for this task, by event type."""
+    events = {}
+    for _ in range(10):  # the sidecar can finish writing a moment after it answers
+        for line in EVENTS.read_text().splitlines():
+            try:
+                event = json.loads(line)
+            except ValueError:
+                continue  # a line still being written
+            if event.get("root_token_id") == root_token_id:
+                events[event["event_type"]] = event
+        if {"mint", "dispatch", "receive", "respond"} <= events.keys():
+            break
+        time.sleep(0.5)
+    return events
+
+
+def send_a2a_request(task: str) -> dict:
+    """Your agent sends an agent-to-agent request through its sidecar.
+
+    The agent signs the envelope with the pairing secret, as the sidecar signs
+    its calls to the agent. The sidecar mints authority for the request, sends
+    it to the destination `self_a2a` (this same agent, through the sidecar's
+    A2A route) and answers with the dispatch status.
+    """
+    envelope = {
+        "schema_version": "aac.a2a.egress.v1",
         "dispatch_id": str(uuid.uuid4()),
-        "destination_profile": destination_profile,
+        "destination_profile": "self_a2a",
         "task_ref": task + "-a2a",
         "authority": {
             "mode": "originate",
             "class_of_action": "demo_verify",
-            "human_originator": synthetic_originator(),
+            "human_originator": {"iss": "https://synthetic.invalid", "sub": "starter-only",
+                                 "auth_time_unix_seconds": int(time.time())},
         },
         "additional_predicates": {},
         "a2a_request": {
             "jsonrpc": "2.0",
             "id": task,
             "method": "SendMessage",
-            "params": {
-                "message": {
-                    "messageId": str(uuid.uuid4()),
-                    "role": "ROLE_USER",
-                    "parts": [{"text": "Synthetic hello"}],
-                }
-            },
+            "params": {"message": {"messageId": str(uuid.uuid4()), "role": "ROLE_USER",
+                                   "parts": [{"text": "Synthetic hello"}]}},
         },
     }
-
-
-def send_a2a(client: httpx.Client, secret: bytes, body: bytes) -> httpx.Response:
-    """One signed dispatch of exactly these envelope bytes."""
-    headers = {"Content-Type": "application/json", "X-AAC-Envelope-Schema": ENVELOPE_SCHEMA}
-    headers.update(
-        sign_invoke_request(
-            secret=secret, method="POST", path=A2A_DISPATCH_PATH, headers=headers, body=body
-        )
-    )
-    response = client.post(A2A_DISPATCH_PATH, headers=headers, content=body)
+    path = "/v1/agent/a2a/dispatch"
+    body = json.dumps(envelope).encode()
+    headers = {"Content-Type": "application/json", "X-AAC-Envelope-Schema": "aac.a2a.egress.v1"}
+    headers.update(sign_invoke_request(secret=PAIRING_SECRET, method="POST", path=path, headers=headers, body=body))
+    response = httpx.post(SIDECAR_API + path, headers=headers, content=body, timeout=60)
     response.raise_for_status()
-    if "error" in response.json():
-        raise RuntimeError("A2A returned a protocol error: " + response.text)
-    return response
+    return response.json()
 
 
-def run_workflow(client: httpx.Client, secret: bytes, originator: httpx.Client,
-                 destination_profile: str = "self_a2a") -> tuple[dict, bytes, bytes]:
-    """The native mint/delegate/receive/settle flow, then an A2A call and its retry.
+def exercise() -> None:
+    task = "starter-" + uuid.uuid4().hex[:8]
+    started = start_task(task)
+    events = recorded_events(started["root_token_id"])
+    mint, dispatch = events.get("mint", {}), events.get("dispatch", {})
+    receive, respond = events.get("receive", {}), events.get("respond", {})
 
-    Returns the summary, the envelope bytes and the response bytes so the
-    caller can save them for a later retry.
-    """
-    task = "starter-" + str(uuid.uuid4())
-    started = time.monotonic()
-    minted = mint(originator, task)
-    mint_ms = millis(started)
-
-    envelope = a2a_envelope(task, destination_profile)
-    body = json.dumps(envelope, separators=(",", ":")).encode()
-    started = time.monotonic()
-    first = send_a2a(client, secret, body)
-    a2a_ms = millis(started)
-    started = time.monotonic()
-    retry = send_a2a(client, secret, body)  # same dispatch id AND same bytes
-    retry_ms = millis(started)
-    if retry.content != first.content:
-        raise RuntimeError("identical A2A retry returned different bytes")
-
-    summary = {
-        "task_ref": task,
-        "root_token_id": minted["root_token_id"],
-        "native_delivery": minted["delivery_status"],
-        "a2a_dispatch_id": envelope["dispatch_id"],
-        "a2a_retry": "same response bytes",
-        "durations_ms": {"mint_to_settle": mint_ms, "a2a": a2a_ms, "a2a_retry": retry_ms},
-    }
-    return summary, body, first.content
+    show("task", f"{task}: {started['delivery_status']}")
+    show("mint", f"the sidecar minted root authority {started['root_token_id'][:12]}... "
+                 f"restricted to {mint.get('caveat_predicates')}")
+    show("forward", f"your agent decided {dispatch.get('agent_decision_action')}; the sidecar handed the next step "
+                    f"to {dispatch.get('destination')}, restricted to {dispatch.get('caveat_predicates')}")
+    show("receive", f"the sidecar verified that step as its receiver, presented by {receive.get('presenter_spiffe_id')}")
+    show("settle", f"your agent decided {respond.get('agent_decision_action')}; the sidecar signed the "
+                   f"terminal attestation {respond.get('terminal_attestation', '')[:20]}...")
+    show("a2a", f"your agent's request went through the sidecar to self_a2a: {send_a2a_request(task)['status']}")
+    refused = httpx.post(AGENT + "/invoke", json={})
+    show("refused", f"a call to your agent without the pairing signature: HTTP {refused.status_code}")
 
 
-def correlate_telemetry(path: Path, root_token_id: str, timeout_seconds: float = 15) -> dict:
-    """Find the local evidence for this root: the settle event with its attestation."""
-    deadline = time.monotonic() + timeout_seconds
-    while True:
-        events = []
-        if path.exists():
-            for line in path.read_text().splitlines():
-                try:
-                    event = json.loads(line)
-                except ValueError:
-                    continue
-                if isinstance(event, dict) and event.get("root_token_id") == root_token_id:
-                    events.append(event)
-        settled = [e for e in events if e.get("event_type") == "respond" and e.get("result") == "success"]
-        if settled:
-            return {
-                "events_for_root": [e["event_type"] + ":" + e.get("result", "?") for e in events],
-                "terminal_attestation_present": bool(settled[0].get("terminal_attestation")),
-            }
-        if time.monotonic() > deadline:
-            raise RuntimeError(
-                "no successful respond event for root " + root_token_id + " in " + str(path)
-            )
-        time.sleep(0.2)
-
-
-def clients(secret_file: str, ca_file: str):
-    ssl_context = ssl.create_default_context(cafile=ca_file)
-    secret = Path(secret_file).read_bytes().strip()
-    client = httpx.Client(base_url=LOOPBACK, timeout=65, trust_env=False)
-    originator = httpx.Client(base_url=EXTERNAL, verify=ssl_context, timeout=65, trust_env=False)
-    return client, originator, secret
-
-
-def command_exercise(exercise_dir: str | None, telemetry_file: str | None) -> dict:
-    client, originator, secret = clients(
-        os.environ["AAC_INVOKE_AUTH_SECRET_FILE"], os.environ["AAC_STARTER_CA_FILE"]
-    )
-    with client, originator:
-        summary, body, response = run_workflow(client, secret, originator)
-    if telemetry_file:
-        summary["local_evidence"] = correlate_telemetry(Path(telemetry_file), summary["root_token_id"])
-    if exercise_dir:
-        saved = Path(exercise_dir) / SAVED_DISPATCH
-        saved.write_text(json.dumps({"envelope": body.decode(), "response": response.decode()}))
-        summary["saved_dispatch"] = str(saved)
-    return summary
-
-
-def command_retry(exercise_dir: str) -> dict:
-    saved = Path(exercise_dir) / SAVED_DISPATCH
-    if not saved.exists():
-        raise SystemExit("nothing to retry: run `./starter exercise` first")
-    record = json.loads(saved.read_text())
-    client, originator, secret = clients(
-        os.environ["AAC_INVOKE_AUTH_SECRET_FILE"], os.environ["AAC_STARTER_CA_FILE"]
-    )
-    with client, originator:
-        started = time.monotonic()
-        response = send_a2a(client, secret, record["envelope"].encode())
-        elapsed = millis(started)
-    if response.content != record["response"].encode():
-        raise RuntimeError("the retried dispatch returned different bytes than the saved result")
-    envelope = json.loads(record["envelope"])
-    return {
-        "a2a_dispatch_id": envelope["dispatch_id"],
-        "retained_result": "same response bytes as the saved run",
-        "durations_ms": {"a2a_retry": elapsed},
-    }
-
-
-def expect_status(label: str, response: httpx.Response, wanted: int, failures: list) -> None:
-    if response.status_code != wanted:
-        failures.append(f"{label}: expected HTTP {wanted}, got {response.status_code}")
-
-
-def command_probe() -> dict:
-    client, originator, secret = clients(
-        os.environ["AAC_INVOKE_AUTH_SECRET_FILE"], os.environ["AAC_STARTER_CA_FILE"]
-    )
-    failures: list = []
-    with client, originator, httpx.Client(base_url=AGENT, timeout=10, trust_env=False) as agent:
-        for path in ("/invoke", "/a2a/v1"):
-            expect_status(f"unsigned POST {path}", agent.post(path, json={}), 401, failures)
-            headers = {"Content-Type": "application/json"}
-            body = b"{}"
-            headers.update(sign_invoke_request(secret=b"not-the-pairing-secret", method="POST",
-                                               path=path, headers=headers, body=body))
-            expect_status(f"wrongly signed POST {path}", agent.post(path, headers=headers, content=body),
-                          401, failures)
-        unknown = originator.post("/v1/agent/mint-root", json={
-            "human_originator": synthetic_originator(), "class_of_action": "not_configured",
-            "task_ref": "starter-probe", "payload": {}})
-        # The sidecar's contract for an unconfigured class: 404 with a stable error code.
-        expect_status("mint with an unknown class of action", unknown, 404, failures)
+def wait_until_ready() -> None:
+    """For ./starter up: the sidecar answers /readyz once it has loaded its identity and configuration."""
+    for _ in range(90):
         try:
-            code = unknown.json().get("error", {}).get("code")
-        except ValueError:
-            code = None
-        if code != "ERR_CLASS_OF_ACTION_NOT_FOUND":
-            failures.append(f"unknown class of action: expected error code ERR_CLASS_OF_ACTION_NOT_FOUND, got {code!r}")
-        ready = client.get("/readyz")
-        expect_status("GET /readyz", ready, 200, failures)
-        readiness = ready.json() if ready.status_code == 200 else {}
-    if failures:
-        raise SystemExit("probe failed:\n  " + "\n  ".join(failures))
-    return {
-        "unsigned_and_wrongly_signed_calls": "refused with HTTP 401 before any handler ran",
-        "unknown_class_of_action": "refused by the sidecar (HTTP 404, ERR_CLASS_OF_ACTION_NOT_FOUND)",
-        "replay_profile": readiness.get("replay_profile"),
-        "replay_backend": readiness.get("replay_backend"),
-    }
-
-
-def command_wait(timeout_seconds: float = 90) -> dict:
-    deadline = time.monotonic() + timeout_seconds
-    started = time.monotonic()
-    with httpx.Client(base_url=LOOPBACK, timeout=5, trust_env=False) as client:
-        while True:
-            try:
-                response = client.get("/readyz")
-                if response.status_code == 200:
-                    body = response.json()
-                    return {"ready_after_ms": millis(started), "replay_profile": body.get("replay_profile")}
-            except httpx.HTTPError:
-                pass
-            if time.monotonic() > deadline:
-                raise SystemExit("the sidecar did not report ready within " + str(timeout_seconds) + "s")
-            time.sleep(0.5)
-
-
-def main(argv: list) -> int:
-    mode = argv[1] if len(argv) > 1 else "exercise"
-    exercise_dir = os.environ.get("AAC_STARTER_EXERCISE_DIR")
-    if mode == "exercise":
-        result = command_exercise(exercise_dir, os.environ.get("AAC_STARTER_TELEMETRY_FILE"))
-    elif mode == "retry":
-        result = command_retry(exercise_dir or ".")
-    elif mode == "probe":
-        result = command_probe()
-    elif mode == "wait":
-        result = command_wait()
-    else:
-        print("usage: client.py exercise|retry|probe|wait", file=sys.stderr)
-        return 2
-    print(json.dumps(result, indent=2))
-    return 0
+            if httpx.get(SIDECAR_API + "/readyz").status_code == 200:
+                print("The sidecar is ready.")
+                return
+        except httpx.HTTPError:
+            pass  # not listening yet
+        time.sleep(1)
+    sys.exit("The sidecar is not ready after 90 s; see: docker compose logs sidecar")
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv))
+    {"exercise": exercise, "wait": wait_until_ready}[sys.argv[1]]()

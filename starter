@@ -1,336 +1,58 @@
 #!/usr/bin/env bash
-# AAC Compose starter — one entry point for the documented flow:
+# The AAC Compose starter.
 #
-#   ./starter setup      guided setup with `aac init`, then pull and build images
-#   ./starter up         start the stack, wait until it is ready and trusted
-#   ./starter exercise   run one complete workflow and show the evidence
-#   ./starter check      readiness, published trust and refusal probes
-#   ./starter status     what `aac init` created and what is running
-#   ./starter retry      resend the last A2A dispatch (retained result)
-#   ./starter build      rebuild the sample agent image after editing agent/
-#   ./starter logs       follow the containers' logs
-#   ./starter down       stop and remove the containers; keep everything else
-#   ./starter clean      also remove the local agent image and this workspace's ./.starter files
-#
-# The script never generates, edits or reads private material: `aac init`
-# and `aac workspace` own every key, certificate and configuration file, and
-# every message about them comes from the CLI. Works with bash 3.2 (macOS).
+#   ./starter setup [aac init options]   register your tenant and create everything with `aac init`
+#   ./starter up                         start your agent, its AAC sidecar and the trust publisher
+#   ./starter exercise                   run one task and show what each piece did
+#   ./starter down                       stop the containers; your tenant and keys stay in ~/.aac
 set -euo pipefail
+cd "$(dirname "$0")"
 
-STARTER_DIR="$(cd "$(dirname "$0")" && pwd)"
-RUNTIME_DIR="$STARTER_DIR/.starter"
-
-# AAC stage: the hosted developer-beta control plane this starter targets.
-AAC_STARTER_ADMIN_URL="${AAC_STARTER_ADMIN_URL:-https://api.stage.cascadeauth.dev}"
-AAC_STARTER_DATA_PLANE_URL="${AAC_STARTER_DATA_PLANE_URL:-https://api.stage.cascadeauth.dev}"
-AAC_STARTER_TRUST_URL="${AAC_STARTER_TRUST_URL:-https://trust.stage.cascadeauth.dev}"
-# The CLI profile and workspace this starter uses. One profile = one tenant;
-# a second tenant is a deliberate choice of another profile name.
-AAC_STARTER_PROFILE="${AAC_STARTER_PROFILE:-stage}"
-# The workspace holds one workload's material and belongs to the profile that
-# created it (the CLI's default name is `starter`); a second tenant needs its
-# own workspace name as well as its own profile.
-AAC_STARTER_WORKSPACE="${AAC_STARTER_WORKSPACE:-starter}"
-AAC_CLI_MINIMUM="0.1.4"
-
-CLI_HOME="${AAC_CLI_HOME:-$HOME/.aac}"
-COMPOSE_ENV="$CLI_HOME/workspaces/$AAC_STARTER_WORKSPACE/compose.env"
-# One Compose project and one exercise directory per workspace, so two
-# tenants' stacks never share containers or saved dispatches.
-COMPOSE_PROJECT="aac-$AAC_STARTER_WORKSPACE"
-WORKSPACE_RUNTIME_DIR="$RUNTIME_DIR/$AAC_STARTER_WORKSPACE"
-EXERCISE_DIR="$WORKSPACE_RUNTIME_DIR/exercise"
-TIMINGS_FILE="$WORKSPACE_RUNTIME_DIR/timings"
-
-say()  { printf '%s\n' "$*" >&2; }
-fail() { say "starter: $*"; exit 1; }
-now()  { date +%s; }
-
-record_timing() {  # record_timing <label> <seconds>
-  mkdir -p "$WORKSPACE_RUNTIME_DIR"
-  printf '%s %s %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$1" "$2" >> "$TIMINGS_FILE"
-  say "  measured: $1 took ${2}s"
-}
-
-need_tool() {
-  command -v "$1" >/dev/null 2>&1 || fail "$1 is not installed. $2"
-}
-
-version_at_least() {  # version_at_least <have> <want>  (dotted integers)
-  [ "$(printf '%s\n%s\n' "$2" "$1" | sort -t. -k1,1n -k2,2n -k3,3n | head -n1)" = "$2" ]
-}
-
-preflight_tools() {
-  need_tool docker "Install Docker Desktop or Docker Engine: https://docs.docker.com/get-docker/"
-  docker compose version >/dev/null 2>&1 || fail "Docker Compose v2 is required (docker compose version)."
-  docker info >/dev/null 2>&1 || fail "Docker is installed but not running."
-  need_tool aac "Install the AAC CLI first: pip install 'aac-cli==0.1.5'"
-  local have
-  have="$(aac --version 2>/dev/null | awk '{print $NF}' | sed 's/\.dev.*//')"
-  version_at_least "$have" "$AAC_CLI_MINIMUM" \
-    || fail "aac $have is too old; this starter needs aac-cli $AAC_CLI_MINIMUM or newer (pip install --upgrade aac-cli)."
-  [ "$(id -u)" -ne 0 ] || fail "run this starter as a normal user, not root."
-}
+# The hosted AAC stage service this example uses.
+AAC_URL="https://api.stage.cascadeauth.dev"
+TRUST_URL="https://trust.stage.cascadeauth.dev"
+# One CLI profile is one tenant; one workspace holds one workload's files.
+PROFILE="${AAC_STARTER_PROFILE:-stage}"
+WORKSPACE="${AAC_STARTER_WORKSPACE:-starter}"
+COMPOSE_ENV="${AAC_CLI_HOME:-$HOME/.aac}/workspaces/$WORKSPACE/compose.env"
 
 compose() {
-  # compose.env is the non-secret variable file `aac init` writes for the
-  # workspace; it is read in place, never copied into the checkout.
-  [ -f "$COMPOSE_ENV" ] || fail "no workspace yet ($COMPOSE_ENV is missing). Run: ./starter setup"
-  mkdir -p "$EXERCISE_DIR"
+  # compose.env, written by `aac init`, tells Compose where your files are.
+  # The containers run as you, so they can read the key files `aac init` made.
   AAC_STARTER_UID="$(id -u)" AAC_STARTER_GID="$(id -g)" \
-  AAC_STARTER_EXERCISE_DIR="$EXERCISE_DIR" \
-    docker compose --project-directory "$STARTER_DIR" --project-name "$COMPOSE_PROJECT" \
-      --env-file "$COMPOSE_ENV" "$@"
+    docker compose --env-file "$COMPOSE_ENV" "$@"
 }
 
-# --- the CLI's view of the workspace -------------------------------------------
-# `aac workspace status` prints one JSON document; the few fields the starter
-# reacts to are picked out with grep so nothing beyond the CLI and Docker is
-# required on the host. Exit code 3 means "not healthy" and still prints.
-
-workspace_status_json() {
-  local flags=""
-  [ "${1:-}" = "--remote" ] && flags="--remote"
-  # shellcheck disable=SC2086
-  aac workspace status --workspace "$AAC_STARTER_WORKSPACE" --output json $flags 2>/dev/null || true
+trust_is_published() {
+  # The publisher uploads your public root key and CA certificate to AAC, which
+  # serves them at the trust URL; every sidecar that verifies your work reads them there.
+  local report
+  report="$(aac workspace status --workspace "$WORKSPACE" --remote --output json 2>/dev/null || true)"
+  [[ $report == *'"contains_root_key_id": true'* && $report == *'"contains_ca_anchor_id": true'* ]]
 }
 
-json_field() {  # json_field <document> <key>   -> the scalar value, unquoted; empty when absent
-  { printf '%s' "$1" | grep -o "\"$2\": *\(\"[^\"]*\"\|true\|false\|null\)" || true; } | head -n1 \
-    | sed -e "s/\"$2\": *//" -e 's/^"//' -e 's/"$//'
-}
-
-require_healthy_workspace() {
-  local document healthy next
-  document="$(workspace_status_json)"
-  [ -n "$document" ] || fail "cannot read workspace '$AAC_STARTER_WORKSPACE'. Run: ./starter setup"
-  healthy="$(json_field "$document" healthy)"
-  if [ "$healthy" != "true" ]; then
-    next="$(json_field "$document" next_command)"
-    say "starter: workspace '$AAC_STARTER_WORKSPACE' is not ready to run. The CLI reports:"
-    aac workspace status --workspace "$AAC_STARTER_WORKSPACE" --output table >&2 || true
-    say ""
-    if [ -n "$next" ] && [ "$next" != "null" ]; then
-      fail "next: $next   (or simply: ./starter setup)"
-    fi
-    fail "fix the problems above, then retry."
-  fi
-}
-
-profile_points_elsewhere() {
-  # An existing profile with this name that targets a different control plane
-  # would silently mix environments; refuse and let the operator pick a name.
-  local shown stored
-  shown="$(aac profile show "$AAC_STARTER_PROFILE" 2>/dev/null || true)"
-  [ -n "$shown" ] || return 1
-  stored="$(printf '%s' "$shown" | grep -o '"admin_url": *"[^"]*"' | head -n1 | sed 's/.*: *"//; s/"$//')"
-  [ -n "$stored" ] && [ "$stored" != "$AAC_STARTER_ADMIN_URL" ]
-}
-
-profile_has_tenant() {
-  aac profile show "$AAC_STARTER_PROFILE" 2>/dev/null | grep -q '"tenant_id": *"tnt-'
-}
-
-refuse_foreign_workspace() {
-  # A workspace belongs to the profile that created it. Say so here, before
-  # `aac init` would create a new profile section and then refuse.
-  local document holder
-  [ -f "$CLI_HOME/workspaces/$AAC_STARTER_WORKSPACE/manifest.json" ] || return 0
-  document="$(workspace_status_json)"
-  holder="$(json_field "$document" profile)"
-  if [ -z "$holder" ]; then
-    say "starter: workspace '$AAC_STARTER_WORKSPACE' exists but the CLI cannot read it:"
-    aac workspace status --workspace "$AAC_STARTER_WORKSPACE" --output table >&2 || true
-    fail "fix the problem above, or choose another workspace: AAC_STARTER_WORKSPACE=<name> ./starter setup"
-  fi
-  if [ "$holder" != "$AAC_STARTER_PROFILE" ]; then
-    fail "workspace '$AAC_STARTER_WORKSPACE' belongs to profile '$holder', not '$AAC_STARTER_PROFILE'. Use AAC_STARTER_WORKSPACE=<another name> ./starter setup"
-  fi
-}
-
-renew_if_expired() {
-  # The development certificates live one day (the CA seven). When the CLI
-  # says the only problem is expiry, renew before anything else: `aac init`
-  # refuses a complete workspace whose material has expired.
-  [ -f "$COMPOSE_ENV" ] || return 0
-  local document
-  document="$(workspace_status_json)"
-  [ "$(json_field "$document" healthy)" = "true" ] && return 0
-  case "$(json_field "$document" next_command)" in
-    *"workspace renew"*)
-      say "== Renewing expired development certificates (aac workspace renew)"
-      aac workspace renew --workspace "$AAC_STARTER_WORKSPACE" --output table >&2
-      say "   Renewed. The running containers, if any, still hold the old material until the next ./starter up." ;;
-  esac
-}
-
-# --- commands --------------------------------------------------------------------
-
-cmd_setup() {
-  local display_name="" contact="" idp="" yes="" started
-  while [ $# -gt 0 ]; do
-    case "$1" in
-      --display-name|--contact|--idp)
-        [ $# -ge 2 ] || fail "$1 needs a value (see ./starter help)"
-        case "$1" in
-          --display-name) display_name="$2" ;;
-          --contact)      contact="$2" ;;
-          --idp)          idp="$2" ;;
-        esac
-        shift 2 ;;
-      --yes)          yes="--create-tenant"; shift ;;
-      *) fail "unknown setup option: $1 (see ./starter help)" ;;
-    esac
-  done
-  preflight_tools
-  if profile_points_elsewhere; then
-    fail "CLI profile '$AAC_STARTER_PROFILE' already points at another control plane. Choose another name: AAC_STARTER_PROFILE=<name> ./starter setup"
-  fi
-  refuse_foreign_workspace
-
-  set -- --profile "$AAC_STARTER_PROFILE" --workspace "$AAC_STARTER_WORKSPACE" \
-         --admin-url "$AAC_STARTER_ADMIN_URL" --data-plane-url "$AAC_STARTER_DATA_PLANE_URL" \
-         --trust-url "$AAC_STARTER_TRUST_URL" --layout container --output table
-  if ! profile_has_tenant; then
-    say "No tenant is registered under profile '$AAC_STARTER_PROFILE' yet."
-    say "Registration signs you in with GitHub or Google; your account becomes the tenant's first administrator."
-    [ -n "$display_name" ] || { printf 'Tenant display name (your team or project): ' >&2; read -r display_name; }
-    [ -n "$contact" ]      || { printf 'Contact email for the tenant: ' >&2; read -r contact; }
-    [ -n "$idp" ]          || { printf 'Sign in with [github/google] (default github): ' >&2; read -r idp; idp="${idp:-github}"; }
-    set -- "$@" --display-name "$display_name" --contact "$contact" --idp "$idp"
-  elif [ -n "$idp" ]; then
-    set -- "$@" --idp "$idp"
-  fi
-  [ -z "$yes" ] || set -- "$@" "$yes"
-
-  renew_if_expired
-  say "== Guided setup (aac init): tenant, sign-in, hosted trust domain, workload, development keys, configuration"
-  started="$(now)"
-  aac init "$@" >&2
-  record_timing "guided setup (aac init)" "$(( $(now) - started ))"
-
-  # The workspace must be rendered in the container layout this stack mounts.
-  local document layout
-  document="$(workspace_status_json)"
-  layout="$(json_field "$document" layout)"
-  if [ "$layout" != "container" ]; then
-    say "== Rendering the configuration in the container layout"
-    aac workspace render --workspace "$AAC_STARTER_WORKSPACE" --layout container --force --output table >&2
-    document="$(workspace_status_json)"
-  fi
-  require_healthy_workspace
-
-  say "== Downloading the sidecar and publisher images and building the sample agent"
-  started="$(now)"
-  compose pull --quiet sidecar publisher >&2
-  compose build --quiet agent >&2
-  record_timing "image download and build" "$(( $(now) - started ))"
-  say ""
-  say "Setup complete. Next: ./starter up"
-}
-
-wait_for_trust() {
-  # The publisher uploads the workspace's public root key and CA at start-up;
-  # the sidecar and any peer fetch them from the public trust URL. Wait until
-  # the CLI sees both there.
-  local deadline document
-  deadline=$(( $(now) + 180 ))
-  while :; do
-    document="$(workspace_status_json --remote)"
-    if [ "$(json_field "$document" contains_root_key_id)" = "true" ] \
-       && [ "$(json_field "$document" contains_ca_anchor_id)" = "true" ]; then
-      return 0
-    fi
-    [ "$(now)" -lt "$deadline" ] || { say "starter: the public trust material is still not visible; publisher logs:"; compose logs --tail 20 publisher >&2; return 1; }
-    sleep 3
-  done
-}
-
-cmd_up() {
-  preflight_tools
-  require_healthy_workspace
-  local started
-  say "== Starting agent, sidecar and publisher (recreated, so they load the current keys and certificates)"
-  started="$(now)"
-  compose up --detach --remove-orphans --force-recreate >&2
-  compose run --rm --no-deps client wait >&2
-  record_timing "start until the sidecar is ready" "$(( $(now) - started ))"
-  say "== Waiting for the published trust material to be visible at $AAC_STARTER_TRUST_URL"
-  started="$(now)"
-  wait_for_trust
-  record_timing "trust publication visible" "$(( $(now) - started ))"
-  say ""
-  say "Running. Next: ./starter exercise"
-}
-
-cmd_exercise() {
-  local started
-  say "== Running one workflow: mint, delegate, receive, settle, then an A2A call and its retry"
-  started="$(now)"
-  compose run --rm --no-deps client exercise
-  record_timing "workflow exercise" "$(( $(now) - started ))"
-}
-
-cmd_build() {
-  say "== Rebuilding the sample agent image from agent/"
-  compose build --quiet agent >&2
-  say "Rebuilt. Restart with: ./starter up"
-}
-
-cmd_retry() {
-  compose run --rm --no-deps client retry
-}
-
-cmd_check() {
-  say "== Containers"
-  compose ps >&2
-  say "== Sidecar readiness and refusals (from inside the shared network namespace)"
-  compose run --rm --no-deps client probe
-  say "== Published trust material (aac workspace status --remote)"
-  aac workspace status --workspace "$AAC_STARTER_WORKSPACE" --remote --output table || true
-}
-
-cmd_status() {
-  aac workspace status --workspace "$AAC_STARTER_WORKSPACE" --output table || true
-  say ""
-  if [ -f "$COMPOSE_ENV" ]; then compose ps >&2; fi
-  if [ -f "$TIMINGS_FILE" ]; then say ""; say "Measured timings (UTC, label, seconds):"; cat "$TIMINGS_FILE" >&2; fi
-}
-
-cmd_logs() { compose logs --follow "$@"; }
-
-cmd_down() {
-  say "== Stopping and removing the containers. The tenant, workspace and retained state stay where they are."
-  if [ -f "$COMPOSE_ENV" ]; then
-    compose down --remove-orphans >&2
-  else
-    # Without the workspace file the containers are still found by project name.
-    docker compose --project-name "$COMPOSE_PROJECT" down --remove-orphans >&2
-  fi
-}
-
-cmd_clean() {
-  cmd_down
-  docker image rm aac-compose-starter-agent:local >/dev/null 2>&1 || true
-  rm -rf "$WORKSPACE_RUNTIME_DIR"
-  rmdir "$RUNTIME_DIR" 2>/dev/null || true
-  say "Removed the local agent image (shared by every workspace) and $WORKSPACE_RUNTIME_DIR. Nothing under $CLI_HOME was touched."
-}
-
-cmd_help() { awk 'NR > 1 { if ($0 !~ /^#/) exit; sub(/^# ?/, ""); print }' "$0" >&2; }
-
-command="${1:-help}"; [ $# -eq 0 ] || shift
+command="${1:-help}"
+[ $# -eq 0 ] || shift
 case "$command" in
-  setup)    cmd_setup "$@" ;;
-  up)       cmd_up ;;
-  exercise) cmd_exercise ;;
-  retry)    cmd_retry ;;
-  build)    cmd_build ;;
-  check)    cmd_check ;;
-  status)   cmd_status ;;
-  logs)     cmd_logs "$@" ;;
-  down)     cmd_down ;;
-  clean)    cmd_clean ;;
-  help|-h|--help) cmd_help ;;
-  *) say "starter: unknown command '$command'"; cmd_help; exit 2 ;;
+  setup)
+    aac init --profile "$PROFILE" --workspace "$WORKSPACE" --layout container \
+      --admin-url "$AAC_URL" --data-plane-url "$AAC_URL" --trust-url "$TRUST_URL" "$@"
+    compose pull sidecar publisher
+    ;;
+  up)
+    compose up --detach --build --force-recreate   # rebuilt and recreated: your latest agent code and keys
+    compose run --rm client wait                   # until the sidecar has loaded its identity
+    echo "Waiting until your public keys are published at $TRUST_URL ..."
+    until trust_is_published; do sleep 2; done
+    echo "Running. Next: ./starter exercise"
+    ;;
+  exercise)
+    compose run --rm client exercise
+    ;;
+  down)
+    compose down
+    ;;
+  *)
+    sed -n '4,7p' "$0" | cut -c3-
+    ;;
 esac

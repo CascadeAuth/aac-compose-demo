@@ -114,16 +114,6 @@ def compose_env_values(home: Path) -> dict[str, str]:
     return values
 
 
-def docker_daemon_available() -> bool:
-    """`docker info` succeeds: the daemon is running (the starter's preflight needs it)."""
-    import shutil
-    import subprocess
-
-    if os.environ.get("AAC_STARTER_SKIP_DOCKER") or not shutil.which("docker"):
-        return False
-    return subprocess.run(["docker", "info"], capture_output=True).returncode == 0
-
-
 def docker_available() -> bool:
     import shutil
     import subprocess

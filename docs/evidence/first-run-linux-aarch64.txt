@@ -1,0 +1,6 @@
+2026-09-14T19:52:32Z guided setup (aac init) 247
+2026-09-14T19:53:44Z guided setup (aac init) 0
+2026-09-14T19:54:02Z image download and build 18
+2026-09-14T19:54:09Z start until the sidecar is ready 6
+2026-09-14T19:54:10Z trust publication visible 1
+2026-09-14T19:54:10Z workflow exercise 0

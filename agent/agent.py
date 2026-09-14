@@ -1,23 +1,20 @@
-"""The sample agent: the workload the AAC sidecar runs beside.
+"""The sample agent: your workload, with the AAC sidecar running beside it.
 
-The sidecar delivers verified work to this application over the shared
-loopback interface. Two routes are protected by the pairing secret that both
-processes read (the sidecar signs every call, the middleware here verifies
-it); an unsigned or wrongly signed request never reaches a handler.
+The sidecar checks AAC authority before any work reaches this code. The two
+share a pairing secret: the sidecar signs every call it makes here, and the
+middleware below refuses a call without a valid signature before any handler
+runs, so only the sidecar can reach the business logic.
 
-* ``POST /invoke`` receives a verified chain and answers with a decision:
-  ``forward`` (delegate to a configured destination with narrower
-  restrictions), ``settle`` (finish the task; the sidecar then signs the
-  terminal attestation) or ``refuse``.
-* ``POST /a2a/v1`` receives a verified unary A2A ``SendMessage`` request and
-  returns the reply.
-* ``GET /healthz`` is open and only says the process is up.
+* ``POST /invoke``: the sidecar delivers a piece of work it has verified; the
+  agent answers with a decision the sidecar then carries out: ``forward``
+  (hand a narrower next step to a destination), ``settle`` (finish; the
+  sidecar signs a terminal attestation) or ``refuse``.
+* ``POST /a2a/v1``: the sidecar delivers an agent-to-agent request it has
+  verified; the agent returns the reply.
 
-Replace ``decide`` with your own business policy after the first successful
-run; keep the middleware and the route names, which the sidecar relies on.
+Change ``decide`` to try your own policy; the route names are the ones the
+sidecar calls.
 """
-
-import os
 
 from aac_invoke_auth.fastapi import InvokeAuthGuard, InvokeAuthMiddleware
 from fastapi import FastAPI, Request
@@ -25,27 +22,25 @@ from fastapi import FastAPI, Request
 app = FastAPI()
 app.add_middleware(
     InvokeAuthMiddleware,
-    guard=InvokeAuthGuard.from_env(),  # reads AAC_INVOKE_AUTH_SECRET_FILE
+    guard=InvokeAuthGuard.from_env(),  # reads the pairing secret from AAC_INVOKE_AUTH_SECRET_FILE
     protected_paths=("/invoke", "/a2a/v1"),
 )
 
-# The destination named here must exist in the sidecar configuration. The
-# configuration `aac init` renders defines `self_receive`: this same workload,
-# which is how one agent demonstrates the whole delegate-and-settle flow.
-FORWARD_DESTINATION = os.environ.get("AAC_STARTER_DESTINATION", "self_receive")
-
 
 def decide(body: dict) -> dict:
-    """The sample business policy: a two-step task with no real-world effect."""
-    payload = body.get("current_arrival", {}).get("payload", {})
-    step = payload.get("step") if isinstance(payload, dict) else None
+    """The sample business policy: a two-step task with no real-world effect.
+
+    Step one forwards the task to ``self_receive``, a destination the sidecar
+    configuration `aac init` wrote defines as this same agent, and narrows the
+    authority to this one task. Step two settles it.
+    """
+    step = body["current_arrival"]["payload"].get("step")
     if step == "forward":
         return {
             "action": "forward",
-            "destination": FORWARD_DESTINATION,
+            "destination": "self_receive",
             "payload": {"step": "settle"},
-            # Narrow, never widen: the delegated step is bound to this task.
-            "additional_predicates": {"task_ref": body["task_ref"]},
+            "additional_predicates": {"task_ref": body["task_ref"]},  # narrower, never wider
         }
     if step == "settle":
         return {
@@ -77,8 +72,3 @@ async def a2a(request: Request) -> dict:
             }
         },
     }
-
-
-@app.get("/healthz")
-async def healthz() -> dict:
-    return {"status": "ok"}

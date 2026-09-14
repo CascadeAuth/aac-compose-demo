@@ -1,104 +1,55 @@
-# AAC Compose starter — the tenant-local half of an Agent Authority Cloud
-# workload: your sample agent, the AAC sidecar beside it, and the tenant's
-# trust-anchor publisher. The control plane is the hosted AAC stage service;
-# nothing here runs or replaces it.
+# The AAC Compose starter: your agent, the AAC sidecar beside it, the publisher
+# that makes your public keys available, and an example client. The AAC service
+# itself is hosted (stage); nothing here runs it.
 #
-# Every ${AAC_*} value comes from the compose.env that `aac init` writes for
-# the workspace (~/.aac/workspaces/<name>/compose.env). Run the stack through
-# ./starter, which passes that file with --env-file and exports
-# AAC_STARTER_UID/AAC_STARTER_GID so the containers run as you and can read
-# the private files `aac init` created with mode 0600.
-
-# The project name is `aac-<workspace>` when run through ./starter (so two
-# workspaces' stacks stay apart); this default applies to a plain
-# `docker compose` invocation.
+# Every ${AAC_...} value comes from the compose.env file `aac init` writes for
+# your workspace: where your keys, certificates and sidecar configuration are.
+# Run the stack through ./starter, which passes that file and your user id.
 name: aac-starter
 
-x-runtime: &runtime
-  user: "${AAC_STARTER_UID:?run this stack through ./starter}:${AAC_STARTER_GID:?run this stack through ./starter}"
-  read_only: true
-  cap_drop: [ALL]
-  security_opt: ["no-new-privileges:true"]
-
-# The pairing secret and the development CA certificate: what the sidecar and
-# its paired agent share. Nothing private to the sidecar alone lives here.
-x-pair-volume: &pair-volume
-  type: bind
-  source: ${AAC_WORKSPACE_PAIR_DIR:?compose.env from `aac init` is required}
-  target: /run/secrets
-  read_only: true
+# The containers run as you, so they can read the key files `aac init` created
+# for you (readable by you only).
+x-run-as-you: &run-as-you "${AAC_STARTER_UID:?run this through ./starter}:${AAC_STARTER_GID:?run this through ./starter}"
 
 services:
-  # Your workload. A small FastAPI application that verifies the sidecar's
-  # pairing signature on every call and returns the decisions AAC executes.
-  # Replace agent/agent.py with your own handler after the first success.
+  # Your workload: agent/agent.py. It accepts only calls signed with the
+  # pairing secret it shares with the sidecar.
   agent:
-    build:
-      context: ./agent
-      args:
-        AAC_INVOKE_AUTH_VERSION: ${AAC_INVOKE_AUTH_VERSION:-0.1.2}
+    build: ./agent
     image: aac-compose-starter-agent:local
-    <<: *runtime
-    tmpfs: [/tmp]
+    user: *run-as-you
     environment:
       AAC_INVOKE_AUTH_SECRET_FILE: /run/secrets/pairing.secret
     volumes:
-      - *pair-volume
-    healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=2)"]
-      interval: 2s
-      timeout: 3s
-      retries: 15
-      start_period: 5s
+      - {type: bind, source: "${AAC_WORKSPACE_PAIR_DIR:?}", target: /run/secrets, read_only: true}
 
-  # The AAC sidecar, joined to the agent's network namespace so the rendered
-  # configuration's 127.0.0.1 addresses hold: the agent on :8000, the sidecar
-  # loopback API on :8080 and its TLS listener on :9443, none published to
-  # the host. The image is the published one; it is never rebuilt here.
+  # The AAC sidecar, the published image. It joins the agent's network, so the
+  # agent (127.0.0.1:8000), the sidecar's local API (127.0.0.1:8080) and its TLS
+  # listener (127.0.0.1:9443) talk over one loopback interface, and nothing is
+  # published on your machine.
   sidecar:
-    image: docker.io/cascadeauth/aac-sidecar:${AAC_SIDECAR_VERSION:-v0.2.0}
-    <<: *runtime
-    network_mode: "service:agent"
-    depends_on:
-      agent:
-        condition: service_healthy
+    image: docker.io/cascadeauth/aac-sidecar:v0.2.0
+    user: *run-as-you
+    network_mode: service:agent
+    depends_on: [agent]
     command: ["-config", "/etc/aac/sidecar-config.yaml"]
     volumes:
-      - type: bind
-        source: ${AAC_SIDECAR_CONFIG_FILE:?}
-        target: /etc/aac/sidecar-config.yaml
-        read_only: true
-      - type: bind
-        source: ${AAC_WORKSPACE_PKI_DIR:?}
-        target: /etc/aac/pki
-        read_only: true
-      # The two secrets the rendered configuration reads under /run/secrets,
-      # mounted one file each: a file cannot be mounted inside a directory
-      # that is itself a read-only mount, and the API key lives outside pair/.
-      - type: bind
-        source: ${AAC_WORKSPACE_PAIR_DIR:?}/pairing.secret
-        target: /run/secrets/pairing.secret
-        read_only: true
-      - type: bind
-        source: ${AAC_API_KEY_FILE:?}
-        target: /run/secrets/tenant-api-key
-        read_only: true
-      # Retained state: the local telemetry sink and the A2A retry results.
-      # Survives stop, start, recreate and rebuild because it lives in the
-      # workspace, not in the container.
-      - type: bind
-        source: ${AAC_WORKSPACE_STATE_DIR:?}
-        target: /var/lib/aac
+      # The configuration `aac init` wrote, and the workload's keys and certificates.
+      - {type: bind, source: "${AAC_SIDECAR_CONFIG_FILE:?}", target: /etc/aac/sidecar-config.yaml, read_only: true}
+      - {type: bind, source: "${AAC_WORKSPACE_PKI_DIR:?}", target: /etc/aac/pki, read_only: true}
+      # The pairing secret it signs agent calls with, and the tenant API key it
+      # uses to fetch the workload's registration from AAC.
+      - {type: bind, source: "${AAC_WORKSPACE_PAIR_DIR:?}/pairing.secret", target: /run/secrets/pairing.secret, read_only: true}
+      - {type: bind, source: "${AAC_API_KEY_FILE:?}", target: /run/secrets/tenant-api-key, read_only: true}
+      # Where it records what it does (telemetry.jsonl), one JSON event per line.
+      - {type: bind, source: "${AAC_WORKSPACE_STATE_DIR:?}", target: /var/lib/aac}
 
-  # The tenant's trust-anchor publisher: signs the workspace's PUBLIC root key
-  # and development CA certificate with the tenant-admin key and uploads them
-  # to AAC, where the sidecar (and any peer) fetches them. It publishes at
-  # start-up and then only when a file changes. One publisher per tenant.
+  # The trust-anchor publisher, the published image. It signs your public root
+  # key and development CA certificate with your tenant-admin key and uploads
+  # them to AAC, which serves them to every sidecar that verifies your work.
   publisher:
-    image: ghcr.io/cascadeauth/aac-trust-anchor-publisher:${AAC_PUBLISHER_VERSION:-0.2.3}
-    <<: *runtime
-    tmpfs: [/tmp]
-    restart: unless-stopped
+    image: ghcr.io/cascadeauth/aac-trust-anchor-publisher:0.2.3
+    user: *run-as-you
     environment:
       AAC_TAP_TENANT_ID: ${AAC_TENANT_ID:?}
       AAC_TAP_ADMIN_KEY_FILE: /keys/tenant-admin.pem
@@ -110,43 +61,22 @@ services:
       AAC_TAP_SPIFFE_BUNDLE_READ_URL: ${AAC_TRUST_URL:?}/.well-known/spiffe-bundle/${AAC_TRUST_DOMAIN:?}
       AAC_TAP_POLL_INTERVAL_SECONDS: "60"
     volumes:
-      - type: bind
-        source: ${AAC_TENANT_DIR:?}/tenant-admin.pem
-        target: /keys/tenant-admin.pem
-        read_only: true
-      - type: bind
-        source: ${AAC_TENANT_DIR:?}/root-keys
-        target: /root-keys
-        read_only: true
-      - type: bind
-        source: ${AAC_TENANT_DIR:?}/spiffe-bundle
-        target: /spiffe-bundle
-        read_only: true
+      - {type: bind, source: "${AAC_TENANT_DIR:?}/tenant-admin.pem", target: /keys/tenant-admin.pem, read_only: true}
+      - {type: bind, source: "${AAC_TENANT_DIR:?}/root-keys", target: /root-keys, read_only: true}
+      - {type: bind, source: "${AAC_TENANT_DIR:?}/spiffe-bundle", target: /spiffe-bundle, read_only: true}
 
-  # The example client. Not part of `up`; `./starter exercise` runs it once
-  # inside the agent's network namespace, where the sidecar's local APIs are.
+  # The example client: agent/client.py, run by ./starter exercise inside the
+  # agent's network, where the sidecar's local ports are. `up` does not start it.
   client:
     image: aac-compose-starter-agent:local
-    <<: *runtime
+    user: *run-as-you
     profiles: [exercise]
-    network_mode: "service:agent"
-    depends_on:
-      agent:
-        condition: service_healthy
-    tmpfs: [/tmp]
+    network_mode: service:agent
     environment:
       AAC_INVOKE_AUTH_SECRET_FILE: /run/secrets/pairing.secret
       AAC_STARTER_CA_FILE: /run/secrets/dev-ca.crt
-      AAC_STARTER_EXERCISE_DIR: /exercise
-      AAC_STARTER_TELEMETRY_FILE: /var/lib/aac/telemetry.jsonl
+      AAC_STARTER_EVIDENCE_FILE: /var/lib/aac/telemetry.jsonl
     volumes:
-      - *pair-volume
-      - type: bind
-        source: ${AAC_WORKSPACE_STATE_DIR:?}
-        target: /var/lib/aac
-        read_only: true
-      - type: bind
-        source: ${AAC_STARTER_EXERCISE_DIR:?run this stack through ./starter}
-        target: /exercise
-    entrypoint: ["python", "/app/client.py"]
-    command: ["exercise"]
+      - {type: bind, source: "${AAC_WORKSPACE_PAIR_DIR:?}", target: /run/secrets, read_only: true}
+      - {type: bind, source: "${AAC_WORKSPACE_STATE_DIR:?}", target: /var/lib/aac, read_only: true}
+    entrypoint: ["python", "client.py"]

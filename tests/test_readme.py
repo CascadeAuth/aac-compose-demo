@@ -37,6 +37,7 @@ HISTORY_LANGUAGE = re.compile(
 
 PUBLIC_TEXT_FILES = sorted(
     [README, STARTER, COMPOSE_FILE, AGENT_DIR / "agent.py", AGENT_DIR / "client.py",
+     REPO / "CONTRIBUTING.md", REPO / "AGENTS.md",
      AGENT_DIR / "Dockerfile", REPO / ".github" / "workflows" / "checks.yml", REPO / "docs" / "evidence" / "README.md"]
     + [p for p in (REPO / "tests").rglob("*.py") if p.name != "test_readme.py"]  # the patterns live here
     + [REPO / "tests" / "requirements.txt"]
@@ -121,27 +122,16 @@ def test_readme_describes_the_present():
         assert match is None, f"README.md:{number}: {match.group(0)!r} in {line.strip()!r}"
 
 
-def compose_default(name: str) -> str:
-    match = re.search(r"\$\{" + name + r":-([^}]+)\}", COMPOSE_FILE.read_text())
-    assert match, name
-    return match.group(1)
-
-
 def test_version_pins_agree():
     readme = README.read_text()
-    sidecar = compose_default("AAC_SIDECAR_VERSION")
-    publisher = compose_default("AAC_PUBLISHER_VERSION")
-    invoke_auth = compose_default("AAC_INVOKE_AUTH_VERSION")
-    dockerfile = (AGENT_DIR / "Dockerfile").read_text()
-    assert f"ARG AAC_INVOKE_AUTH_VERSION={invoke_auth}" in dockerfile
     versions_table = readme.split("## Versions")[1].split("## ")[0]
-    assert f"`{sidecar}`" in versions_table and f"aac-sidecar:{sidecar}" in readme
-    assert f"`{publisher}`" in versions_table and f"aac-trust-anchor-publisher:{publisher}" in readme
-    assert f"`{invoke_auth}`" in versions_table
+    compose = COMPOSE_FILE.read_text()
     requirements = (REPO / "tests" / "requirements.txt").read_text()
-    assert f"aac-invoke-auth[fastapi]=={invoke_auth}" in requirements
+    sidecar = re.search(r"cascadeauth/aac-sidecar:(\S+)", compose).group(1)
+    publisher = re.search(r"aac-trust-anchor-publisher:(\S+)", compose).group(1)
+    invoke_auth = re.search(r"aac-invoke-auth\[fastapi\]==([0-9.]+)", (AGENT_DIR / "Dockerfile").read_text()).group(1)
     cli = re.search(r"aac-cli==([0-9.]+)", requirements).group(1)
+    for version in (sidecar, publisher, invoke_auth, cli):
+        assert f"`{version}`" in versions_table, version
+    assert f"aac-invoke-auth[fastapi]=={invoke_auth}" in requirements
     assert f"pip install 'aac-cli=={cli}'" in readme
-    assert f"'aac-cli=={cli}'" in STARTER.read_text()
-    floor = re.search(r'AAC_CLI_MINIMUM="([0-9.]+)"', STARTER.read_text()).group(1)
-    assert f"({floor} or newer works)" in versions_table

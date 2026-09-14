@@ -47,10 +47,6 @@ def test_protected_routes_refuse_unauthenticated_calls(agent_app, path, mode):
     assert post(agent_app, path, {}, mode).status_code == 401
 
 
-def test_healthz_is_open(agent_app):
-    assert agent_app.get("/healthz").json() == {"status": "ok"}
-
-
 def test_decisions_forward_then_settle_and_refuse_anything_else(agent_app):
     forward = post(agent_app, "/invoke", {"task_ref": "starter-task", "current_arrival": {"payload": {"step": "forward"}}}).json()
     assert forward["action"] == "forward"

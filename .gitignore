@@ -1,5 +1,3 @@
-# Runtime files the starter writes beside the checkout (never private material)
-.starter/
 # Python
 __pycache__/
 *.pyc

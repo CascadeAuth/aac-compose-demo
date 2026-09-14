@@ -13,7 +13,6 @@ import subprocess
 from pathlib import Path
 
 import pytest
-import yaml
 from aac_cli.workspace_layout import (
     CONTAINER_SECRETS_DIRECTORY,
     CONTAINER_SIDECAR_DIRECTORY,
@@ -28,8 +27,7 @@ UID, GID = "4242", "4243"
 
 
 def rendered(home: Path, tmp_path: Path, *profiles: str) -> dict:
-    env = {**os.environ, "AAC_STARTER_UID": UID, "AAC_STARTER_GID": GID,
-           "AAC_STARTER_EXERCISE_DIR": str(tmp_path / "exercise")}
+    env = {**os.environ, "AAC_STARTER_UID": UID, "AAC_STARTER_GID": GID}
     command = ["docker", "compose", "--project-directory", str(REPO),
                "--env-file", str(home / "workspaces" / "starter" / "compose.env")]
     for profile in profiles:
@@ -110,18 +108,22 @@ def test_publisher_environment_matches_the_cli_render(synthetic_home, tmp_path):
     assert compose_env["AAC_TAP_SPIFFE_TRUST_DOMAIN"] == TRUST_DOMAIN
 
 
-def test_every_container_runs_as_the_caller_without_ports_or_privileges(synthetic_home, tmp_path):
+def test_every_container_runs_as_you_and_nothing_is_published(synthetic_home, tmp_path):
     config = rendered(synthetic_home, tmp_path, "exercise")
     assert set(config["services"]) == {"agent", "sidecar", "publisher", "client"}
     for name, service in config["services"].items():
         assert service["user"] == f"{UID}:{GID}", name
-        assert service["read_only"] is True, name
-        assert service["cap_drop"] == ["ALL"], name
-        assert service["security_opt"] == ["no-new-privileges:true"], name
         assert "ports" not in service, name
-        assert service.get("privileged") is not True
-    assert config["services"]["client"]["network_mode"] == "service:agent"
+    for name in ("sidecar", "client"):
+        assert config["services"][name]["network_mode"] == "service:agent", name
     assert "exercise" in config["services"]["client"]["profiles"]
+
+
+def test_the_client_reads_the_record_the_sidecar_writes(synthetic_home, tmp_path):
+    client = rendered(synthetic_home, tmp_path, "exercise")["services"]["client"]
+    sidecar_config = json.loads((synthetic_home / "manifest-for-tests.json").read_text())["sidecar_config"]
+    assert client["environment"]["AAC_STARTER_EVIDENCE_FILE"] == sidecar_config["sidecar"]["telemetry"]["sink"]
+    assert mounts(client)[CONTAINER_STATE_DIRECTORY]["source"] == compose_env_values(synthetic_home)["AAC_WORKSPACE_STATE_DIR"]
 
 
 def test_the_client_is_not_part_of_a_plain_up(synthetic_home, tmp_path):
