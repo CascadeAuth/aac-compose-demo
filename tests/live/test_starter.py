@@ -140,7 +140,7 @@ def test_04_check_probes_refusals(evidence):
 
 
 def test_05_no_ports_are_published_and_loopback_stays_private():
-    names = subprocess.run(["docker", "ps", "--filter", "name=aac-starter-", "--format", "{{.Names}}"],
+    names = subprocess.run(["docker", "ps", "--filter", f"name=aac-{WORKSPACE}-", "--format", "{{.Names}}"],
                            capture_output=True, text=True).stdout.split()
     assert len(names) == 3, names
     for name in names:

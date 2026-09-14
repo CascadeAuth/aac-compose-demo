@@ -9,6 +9,9 @@
 # AAC_STARTER_UID/AAC_STARTER_GID so the containers run as you and can read
 # the private files `aac init` created with mode 0600.
 
+# The project name is `aac-<workspace>` when run through ./starter (so two
+# workspaces' stacks stay apart); this default applies to a plain
+# `docker compose` invocation.
 name: aac-starter
 
 x-runtime: &runtime

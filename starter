@@ -36,6 +36,10 @@ AAC_CLI_MINIMUM="0.1.4"
 
 CLI_HOME="${AAC_CLI_HOME:-$HOME/.aac}"
 COMPOSE_ENV="$CLI_HOME/workspaces/$AAC_STARTER_WORKSPACE/compose.env"
+# One Compose project and one exercise directory per workspace, so two
+# tenants' stacks never share containers or saved dispatches.
+COMPOSE_PROJECT="aac-$AAC_STARTER_WORKSPACE"
+EXERCISE_DIR="$RUNTIME_DIR/$AAC_STARTER_WORKSPACE/exercise"
 
 say()  { printf '%s\n' "$*" >&2; }
 fail() { say "starter: $*"; exit 1; }
@@ -71,10 +75,11 @@ compose() {
   # compose.env is the non-secret variable file `aac init` writes for the
   # workspace; it is read in place, never copied into the checkout.
   [ -f "$COMPOSE_ENV" ] || fail "no workspace yet ($COMPOSE_ENV is missing). Run: ./starter setup"
-  mkdir -p "$RUNTIME_DIR/exercise"
+  mkdir -p "$EXERCISE_DIR"
   AAC_STARTER_UID="$(id -u)" AAC_STARTER_GID="$(id -g)" \
-  AAC_STARTER_EXERCISE_DIR="$RUNTIME_DIR/exercise" \
-    docker compose --project-directory "$STARTER_DIR" --env-file "$COMPOSE_ENV" "$@"
+  AAC_STARTER_EXERCISE_DIR="$EXERCISE_DIR" \
+    docker compose --project-directory "$STARTER_DIR" --project-name "$COMPOSE_PROJECT" \
+      --env-file "$COMPOSE_ENV" "$@"
 }
 
 # --- the CLI's view of the workspace -------------------------------------------
@@ -299,7 +304,7 @@ cmd_down() {
     compose down --remove-orphans >&2
   else
     # Without the workspace file the containers are still found by project name.
-    docker compose --project-name aac-starter down --remove-orphans >&2
+    docker compose --project-name "$COMPOSE_PROJECT" down --remove-orphans >&2
   fi
 }
 

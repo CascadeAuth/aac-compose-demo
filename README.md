@@ -120,8 +120,9 @@ prints a summary like this:
 }
 ```
 
-The saved dispatch lands in `.starter/exercise/` in this checkout (`/exercise`
-is its path inside the client container); `./starter retry` resends it.
+The saved dispatch lands in `.starter/starter/exercise/` in this checkout
+(`/exercise` is its path inside the client container; the middle segment is
+the workspace name); `./starter retry` resends it.
 
 What that proves, in order:
 
@@ -149,8 +150,8 @@ sign-in speed. `./starter status` prints the timings of your own runs.
 
 | Environment | Guided setup (`aac init`, two browser sign-ins included) | Image download and build | Start until ready | Trust visible | Exercise | First authenticated success |
 |---|---|---|---|---|---|---|
-| Ubuntu 24.04 VM, arm64, Docker Engine 29.1, Compose 2.40 — fresh machine, new tenant | 247 s | 21 s (cold: every image removed first; 18 s with two of three images present) | 6–7 s | 0–1 s | 1 s | about 4.6 minutes, sign-ins included |
-| macOS 15, Apple silicon, Docker Desktop 29.7, Compose 5.5 — existing tenant, repeat runs | 0–3 s (already complete) | 13 s with cached images (the cold pull of the sidecar and publisher images on that network was timed separately at 6 min 39 s and 6 min 42 s) | 2–7 s | 0–1 s | 0–1 s | under 30 s |
+| Ubuntu 24.04 VM, arm64, Docker Engine 29.1, Compose 2.40 — fresh machine, new tenant | 247 s | 21 s (cold: every image removed first; 18 s with two of three images present) | 6–7 s at first start; 16–17 s when `./starter up` recreates a running stack | 0–1 s | 0–1 s | about 4.6 minutes, sign-ins included |
+| macOS 15, Apple silicon, Docker Desktop 29.7, Compose 5.5 — existing tenant, repeat runs | 0–3 s (already complete) | 13 s with cached images (the cold pull of the sidecar and publisher images on that network was timed separately at 6 min 39 s and 6 min 42 s) | 6–10 s | 0–1 s | 0–1 s | under 30 s |
 
 The numbers come from `docs/evidence/` (the live test harness in `tests/live/`
 writes one file per platform; each machine's complete timing log and a note on
@@ -211,9 +212,13 @@ export AAC_STARTER_PROFILE=team-two AAC_STARTER_WORKSPACE=team-two
 ./starter up
 ```
 
-Profile and workspace names are 3–15 characters: lowercase letters, digits
-and single hyphens. Asking for an existing workspace under a different
-profile is refused before anything is created.
+Profile and workspace names are 3–15 characters: lowercase letters and
+digits with single interior hyphens, at least one letter. Asking for an
+existing workspace under a different profile is refused before anything is
+created. Each workspace gets its own Compose project (`aac-<workspace>`) and
+its own saved dispatches under `.starter/<workspace>/`, so two tenants' stacks
+can run side by side; keep the two variables exported in the shell you use
+for that tenant, or `./starter` falls back to the default `stage`/`starter`.
 
 ## What is running
 
@@ -222,7 +227,7 @@ profile is refused before anything is created.
 | `agent` | built here from `agent/Dockerfile` (Python 3.12, `aac-invoke-auth[fastapi]`) | you | `pair/` (pairing secret, development CA certificate) | nothing |
 | `sidecar` | `docker.io/cascadeauth/aac-sidecar:v0.2.0` | you | `sidecar-config.yaml`, `pki/`, the pairing secret, the tenant API key | `state/` (local evidence, retained A2A results) |
 | `publisher` | `ghcr.io/cascadeauth/aac-trust-anchor-publisher:0.2.3` | you | the tenant-admin private key, `root-keys/`, `spiffe-bundle/` (public halves) | nothing locally; uploads to AAC |
-| `client` | the agent image | you | `pair/`, `state/` (read-only) | `.starter/exercise/` in this checkout |
+| `client` | the agent image | you | `pair/`, `state/` (read-only) | `.starter/<workspace>/exercise/` in this checkout |
 
 All containers run with a read-only root file system, no capabilities and no
 published ports. The sidecar shares the agent's network namespace, so the

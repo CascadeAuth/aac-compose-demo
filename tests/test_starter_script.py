@@ -8,7 +8,7 @@ import subprocess
 
 import pytest
 
-from conftest import STARTER, docker_available
+from conftest import STARTER, docker_daemon_available
 
 
 def test_bash_syntax():
@@ -40,8 +40,9 @@ def test_script_is_executable_and_bash_3_compatible():
         assert construct not in text, construct
 
 
-@pytest.mark.skipif(not docker_available() or shutil.which("aac") is None, reason="needs docker and the aac CLI")
-def test_setup_refuses_a_workspace_that_belongs_to_another_profile(synthetic_home, monkeypatch):
+@pytest.mark.skipif(not docker_daemon_available() or shutil.which("aac") is None,
+                    reason="needs a running Docker daemon and the aac CLI")
+def test_setup_refuses_a_workspace_that_belongs_to_another_profile(synthetic_home):
     # The synthetic workspace was created under profile `stage`; asking for it
     # under another profile must stop before `aac init` creates a profile section.
     env = {**os.environ, "AAC_CLI_HOME": str(synthetic_home), "AAC_STARTER_PROFILE": "team-two",
@@ -49,7 +50,8 @@ def test_setup_refuses_a_workspace_that_belongs_to_another_profile(synthetic_hom
     result = subprocess.run([str(STARTER), "setup", "--yes"], capture_output=True, text=True, env=env)
     assert result.returncode == 1
     assert "belongs to profile 'stage', not 'team-two'" in result.stderr
-    assert "[team-two]" not in (synthetic_home / "config").read_text() if (synthetic_home / "config").exists() else True
+    config = synthetic_home / "config"
+    assert not config.exists() or "[team-two]" not in config.read_text()
 
 
 def test_setup_option_without_a_value_is_refused():
