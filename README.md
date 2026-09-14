@@ -34,7 +34,7 @@ are the published images, pulled as they are.
 
 | You need | Notes |
 |---|---|
-| Docker with Compose v2 | Docker Desktop on macOS, or Docker Engine plus the `docker compose` plugin on Linux. Run everything as a normal user, not root. |
+| Docker with Compose v2 | Docker Desktop on macOS, or Docker Engine (the usual root-owned daemon, not rootless mode) plus the `docker compose` plugin on Linux. Run everything as a normal user, not root. |
 | Python 3.10 or newer | Only for the AAC command-line tool (`aac-cli`). |
 | A GitHub or Google account | Registration signs you in with it; that identity becomes your tenant's first administrator. |
 | Bash and Git | The `starter` script is plain Bash and runs on macOS's own Bash 3.2. |
@@ -70,7 +70,7 @@ which does the work in five numbered steps and asks once before creating
 the tenant, because a tenant is permanent:
 
 1. registers the developer tenant (first browser sign-in);
-2. opens a tenant-admin session (a second browser sign-in today);
+2. opens a tenant-admin session (a second browser sign-in);
 3. takes the trust domain AAC assigns to the tenant
    (`<tenant-id>.tenants.stage.cascadeauth.dev`, no DNS work on your side);
 4. registers the sample workload `spiffe://<trust-domain>/demo/agent`;
@@ -115,9 +115,13 @@ prints a summary like this:
   "local_evidence": {
     "events_for_root": ["mint:success", "receive:success", "respond:success", "dispatch:success"],
     "terminal_attestation_present": true
-  }
+  },
+  "saved_dispatch": "/exercise/last-a2a-dispatch.json"
 }
 ```
+
+The saved dispatch lands in `.starter/exercise/` in this checkout (`/exercise`
+is its path inside the client container); `./starter retry` resends it.
 
 What that proves, in order:
 
@@ -145,11 +149,12 @@ sign-in speed. `./starter status` prints the timings of your own runs.
 
 | Environment | Guided setup (`aac init`, two browser sign-ins included) | Image download and build | Start until ready | Trust visible | Exercise | First authenticated success |
 |---|---|---|---|---|---|---|
-| Ubuntu 24.04 VM, arm64, Docker Engine 29.1, Compose 2.40 — fresh machine, new tenant | 247 s | 21 s (cold) | 6–7 s | 0–1 s | 1 s | about 4.6 minutes, sign-ins included |
-| macOS 15, Apple silicon, Docker Desktop 29.7, Compose 5.5 — existing tenant, repeat runs | 0–3 s (already complete) | 13 s with cached images; the cold pull of the two images took 6–7 minutes on that network | 2–7 s | 0–1 s | 0–1 s | under 30 s |
+| Ubuntu 24.04 VM, arm64, Docker Engine 29.1, Compose 2.40 — fresh machine, new tenant | 247 s | 21 s (cold: every image removed first; 18 s with two of three images present) | 6–7 s | 0–1 s | 1 s | about 4.6 minutes, sign-ins included |
+| macOS 15, Apple silicon, Docker Desktop 29.7, Compose 5.5 — existing tenant, repeat runs | 0–3 s (already complete) | 13 s with cached images (the cold pull of the sidecar and publisher images on that network was timed separately at 6 min 39 s and 6 min 42 s) | 2–7 s | 0–1 s | 0–1 s | under 30 s |
 
 The numbers come from `docs/evidence/` (the live test harness in `tests/live/`
-writes one file per platform, and the VM's complete timing log is beside it).
+writes one file per platform; each machine's complete timing log and a note on
+how every figure was taken are beside them).
 Sign-in time is yours: the guided-setup figure is dominated by the two
 browser sign-ins, and the download figure by your connection to the
 registries.
@@ -161,7 +166,9 @@ are created once and reused. `./starter down` removes the containers and
 nothing else. `./starter up` after that, a container recreation or a
 rebuilt agent image all start with the same identities; the A2A retained
 results survive because they live in the workspace's `state/` directory,
-not in a container. Try it:
+not in a container. `./starter up` always recreates the containers, so
+they load whatever keys, certificates and configuration the workspace holds
+now. Try it:
 
 ```bash
 ./starter down
@@ -176,8 +183,9 @@ Two things do **not** survive a restart, by design:
   limit of Basic. Retained A2A results are separate and do survive.
 * The **one-day certificates** expire. `./starter up` refuses to start with
   expired material and points at the fix; `./starter setup` renews them
-  through `aac workspace renew` (the development CA is renewed weekly, and
-  the publisher then uploads the new CA certificate at its next start).
+  through `aac workspace renew`, and the next `./starter up` restarts the
+  containers on the renewed material (the development CA is renewed weekly,
+  and the publisher then uploads the new CA certificate when it restarts).
 
 ## When something is missing
 
@@ -186,18 +194,26 @@ straight from the CLI. Two cases deserve a note:
 
 * **The tenant API key is gone** (`missing_files` lists `credentials/<tenant-id>`).
   Restore the protected copy you kept, or issue a new one with
-  `aac tenant reissue-api-key --profile stage`. Only a hash of the key exists
-  on the server, so a lost key is replaced, never recovered.
+  `aac tenant reissue-api-key --profile stage` (name your own profile if you
+  changed `AAC_STARTER_PROFILE`). Only a hash of the key exists on the server,
+  so a lost key is replaced, never recovered.
 * **A new computer.** The CLI's PyPI page has the procedure ("Setting up
   aac-cli on a new computer"); it needs the tenant API key and the tenant
   directory from your backup, and a new workspace name.
 
 Nothing in this repository registers a tenant on its own. A second tenant is
-a deliberate choice of another profile name:
+a deliberate choice of another profile name together with another workspace
+name, because a workspace belongs to the profile that created it:
 
 ```bash
-AAC_STARTER_PROFILE=other-tenant ./starter setup
+export AAC_STARTER_PROFILE=team-two AAC_STARTER_WORKSPACE=team-two
+./starter setup
+./starter up
 ```
+
+Profile and workspace names are 3–15 characters: lowercase letters, digits
+and single hyphens. Asking for an existing workspace under a different
+profile is refused before anything is created.
 
 ## What is running
 
@@ -286,6 +302,10 @@ names the versions it was verified with.
   images are public and need no account.
 * `./starter up` says the workspace is not ready — read the CLI report it
   prints; the `next_command` line is the fix.
+* `./starter setup` stops with "This tenant has several sign-in options" — a
+  step still needs a signed-in session and the workspace was created before
+  the sign-in choice was recorded; rerun with `./starter setup --idp github`
+  (or `--idp google`).
 * The trust material never becomes visible — `./starter logs publisher`
   shows each upload attempt and the reason it was refused.
 * An agent HTTP 401 in the sidecar's logs — the two processes read different

@@ -125,6 +125,79 @@ def test_cli_usage(client_module, capsys):
     assert "usage" in capsys.readouterr().err
 
 
+class FakeAgentAndSidecar:
+    """Stands in for the agent's protected routes and the sidecar's mint/readyz endpoints."""
+
+    def __init__(self, unknown_class_status: int = 404, unknown_class_code: str = "ERR_CLASS_OF_ACTION_NOT_FOUND",
+                 ready_after: int = 0) -> None:
+        self.unknown_class_status = unknown_class_status
+        self.unknown_class_code = unknown_class_code
+        self.ready_after = ready_after
+        self.readyz_calls = 0
+
+    def __call__(self, request: httpx.Request) -> httpx.Response:
+        if request.url.path in ("/invoke", "/a2a/v1"):
+            try:
+                verify_invoke_request(secret=SECRET, method="POST", path=request.url.path,
+                                      headers=request.headers, body=request.content)
+            except Exception:
+                return httpx.Response(401, json={"detail": "unauthenticated"})
+            return httpx.Response(200, json={"action": "refuse"})
+        if request.url.path == "/v1/agent/mint-root":
+            return httpx.Response(self.unknown_class_status, json={"error": {"code": self.unknown_class_code}})
+        if request.url.path == "/readyz":
+            self.readyz_calls += 1
+            if self.readyz_calls <= self.ready_after:
+                return httpx.Response(503, json={"ready": False})
+            return httpx.Response(200, json={"replay_profile": "basic", "replay_backend": "memory"})
+        raise AssertionError("unexpected path " + request.url.path)
+
+
+def _install_fake_clients(client_module, fake, monkeypatch, tmp_path):
+    secret_file = tmp_path / "pairing.secret"; secret_file.write_bytes(SECRET)
+    ca_file = tmp_path / "ca.pem"; ca_file.write_bytes(_self_signed_ca())
+    monkeypatch.setenv("AAC_INVOKE_AUTH_SECRET_FILE", str(secret_file))
+    monkeypatch.setenv("AAC_STARTER_CA_FILE", str(ca_file))
+    real_client = httpx.Client
+
+    def fake_client(*args, **kwargs):  # every base_url the client uses is served by `fake`
+        kwargs.pop("verify", None)
+        return real_client(*args, transport=httpx.MockTransport(fake), **kwargs)
+
+    monkeypatch.setattr(client_module.httpx, "Client", fake_client)
+
+
+def test_probe_reports_the_refusals(client_module, monkeypatch, tmp_path):
+    _install_fake_clients(client_module, FakeAgentAndSidecar(), monkeypatch, tmp_path)
+    result = client_module.command_probe()
+    assert "HTTP 401" in result["unsigned_and_wrongly_signed_calls"]
+    assert "ERR_CLASS_OF_ACTION_NOT_FOUND" in result["unknown_class_of_action"]
+    assert result["replay_profile"] == "basic"
+
+
+@pytest.mark.parametrize("status,code", [(500, "ERR_INTERNAL"), (404, "ERR_SOMETHING_ELSE"), (200, None)])
+def test_probe_fails_when_the_sidecar_answers_off_contract(client_module, monkeypatch, tmp_path, status, code):
+    _install_fake_clients(client_module, FakeAgentAndSidecar(status, code), monkeypatch, tmp_path)
+    with pytest.raises(SystemExit, match="probe failed"):
+        client_module.command_probe()
+
+
+def test_wait_polls_until_ready(client_module, monkeypatch, tmp_path):
+    fake = FakeAgentAndSidecar(ready_after=2)
+    _install_fake_clients(client_module, fake, monkeypatch, tmp_path)
+    monkeypatch.setattr(client_module.time, "sleep", lambda _: None)
+    result = client_module.command_wait(timeout_seconds=5)
+    assert fake.readyz_calls == 3
+    assert result["replay_profile"] == "basic"
+
+
+def test_wait_gives_up(client_module, monkeypatch, tmp_path):
+    _install_fake_clients(client_module, FakeAgentAndSidecar(ready_after=10**6), monkeypatch, tmp_path)
+    monkeypatch.setattr(client_module.time, "sleep", lambda _: None)
+    with pytest.raises(SystemExit, match="did not report ready"):
+        client_module.command_wait(timeout_seconds=0.05)
+
+
 def _self_signed_ca() -> bytes:
     import datetime as dt
 

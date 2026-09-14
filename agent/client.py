@@ -240,8 +240,14 @@ def command_probe() -> dict:
         unknown = originator.post("/v1/agent/mint-root", json={
             "human_originator": synthetic_originator(), "class_of_action": "not_configured",
             "task_ref": "starter-probe", "payload": {}})
-        if unknown.status_code < 400:
-            failures.append(f"unknown class of action: expected a refusal, got HTTP {unknown.status_code}")
+        # The sidecar's contract for an unconfigured class: 404 with a stable error code.
+        expect_status("mint with an unknown class of action", unknown, 404, failures)
+        try:
+            code = unknown.json().get("error", {}).get("code")
+        except ValueError:
+            code = None
+        if code != "ERR_CLASS_OF_ACTION_NOT_FOUND":
+            failures.append(f"unknown class of action: expected error code ERR_CLASS_OF_ACTION_NOT_FOUND, got {code!r}")
         ready = client.get("/readyz")
         expect_status("GET /readyz", ready, 200, failures)
         readiness = ready.json() if ready.status_code == 200 else {}
@@ -249,7 +255,7 @@ def command_probe() -> dict:
         raise SystemExit("probe failed:\n  " + "\n  ".join(failures))
     return {
         "unsigned_and_wrongly_signed_calls": "refused with HTTP 401 before any handler ran",
-        "unknown_class_of_action": "refused by the sidecar (HTTP " + str(unknown.status_code) + ")",
+        "unknown_class_of_action": "refused by the sidecar (HTTP 404, ERR_CLASS_OF_ACTION_NOT_FOUND)",
         "replay_profile": readiness.get("replay_profile"),
         "replay_backend": readiness.get("replay_backend"),
     }

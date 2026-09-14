@@ -50,17 +50,51 @@ def synthetic_home(tmp_path: Path) -> Path:
         workload_spiffe_id=f"spiffe://{TRUST_DOMAIN}/demo/agent", workload_path="demo/agent",
         root_key_id=workspace.root_key_id(), ca_anchor_id=workspace.ca_anchor_id(), layout="container",
     )
+    from aac_cli.workspace_manifest import STEP_ADMIN_KEY_INSTALLED, STEP_HOSTED_DOMAIN, STEP_MATERIAL, STEP_RENDERED, STEP_TENANT, STEP_WORKLOAD, write_manifest
+    for step in (STEP_TENANT, STEP_HOSTED_DOMAIN, STEP_WORKLOAD, STEP_MATERIAL, STEP_ADMIN_KEY_INSTALLED, STEP_RENDERED):
+        manifest = manifest.with_step(step)
+    write_manifest(workspace.manifest, manifest)
     config = render_sidecar_config(manifest, workspace, api_key_file=api_key_file, layout="container")
     workspace.sidecar_config.write_text(sidecar_config_text(config))
     workspace.compose_env.write_text(render_compose_env(manifest, workspace, tenant, api_key_file=api_key_file))
     tenant.publisher_env.write_text(render_publisher_env(manifest, tenant))
-    for name in ("pairing.secret", "dev-ca.crt"):
-        (workspace.pair / name).write_text("synthetic\n")
-    for name in ("root.pem", "workload.key", "workload.crt", "terminal.key", "terminal.crt",
-                 "server.key", "server.crt", "outbound-ca.pem", "dev-ca.crt"):
-        (workspace.pki / name).write_text("synthetic\n")
-    tenant.admin_key.write_text("synthetic\n")
+    # Real (throwaway) development material, generated with the CLI's own
+    # generator, so `aac workspace status` can assess the synthetic workspace.
+    from aac_cli import dev_material
+
+    ca_key = dev_material.generate_ed25519_key()
+    ca_certificate = dev_material.build_development_ca(ca_key)
+    ca_pem = dev_material.certificate_pem(ca_certificate)
+    spiffe_id = f"spiffe://{TRUST_DOMAIN}/demo/agent"
+    for key_path, cert_path in ((workspace.workload_key, workspace.workload_certificate),
+                                (workspace.terminal_key, workspace.terminal_certificate)):
+        key = dev_material.generate_ed25519_key()
+        certificate = dev_material.issue_identity_certificate(
+            ca_key=ca_key, ca_certificate=ca_certificate, subject_key=key, spiffe_id=spiffe_id)
+        key_path.write_bytes(dev_material.private_key_pem(key))
+        cert_path.write_bytes(dev_material.certificate_pem(certificate))
+    server_key = dev_material.generate_p256_key()
+    server_certificate = dev_material.issue_localhost_server_certificate(
+        ca_key=ca_key, ca_certificate=ca_certificate, server_key=server_key)
+    workspace.server_key.write_bytes(dev_material.private_key_pem(server_key))
+    workspace.server_certificate.write_bytes(dev_material.certificate_pem(server_certificate))
+    root_key = dev_material.generate_ed25519_key()
+    workspace.root_signing_key.write_bytes(dev_material.private_key_pem(root_key))
+    workspace.root_signing_public_key.write_bytes(dev_material.public_key_pem(root_key))
+    tenant.published_root_key(workspace.root_key_id()).write_bytes(dev_material.public_key_pem(root_key))
+    for path in (workspace.dev_ca_certificate, workspace.pair_ca_certificate,
+                 tenant.published_ca_certificate(workspace.ca_anchor_id())):
+        path.write_bytes(ca_pem)
+    workspace.dev_ca_key.write_bytes(dev_material.private_key_pem(ca_key))
+    workspace.outbound_ca_bundle.write_bytes(ca_pem)
+    workspace.pairing_secret.write_text("synthetic-pairing-secret\n")
+    admin_key = dev_material.generate_ed25519_key()
+    tenant.admin_key.write_bytes(dev_material.private_key_pem(admin_key))
+    tenant.admin_public_key.write_bytes(dev_material.public_key_pem(admin_key))
     api_key_file.write_text("synthetic-api-key\n")
+    for path in home.rglob("*"):
+        path.chmod(0o700 if path.is_dir() else 0o600)
+    home.chmod(0o700)
     (home / "manifest-for-tests.json").write_text(json.dumps({
         "sidecar_config": config,
         "publisher_env": tenant.publisher_env.read_text(),

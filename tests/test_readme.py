@@ -22,13 +22,25 @@ ENVIRONMENT_ASSIGNMENT = re.compile(r"^[A-Z_][A-Z0-9_]*=")
 INTERNAL_LANGUAGE = re.compile(
     r"\b(?:[AB][0-9]+|PR[ #.-]*[0-9]+|Phase[ -]+[0-9]+|Nelson|Claude|Codex|Milestone|rehearsal)\b"
     r"|Eng Spec|PARITY\.md|aac-prototype|owner authorization|source-free|private Go repository"
-    r"|Python reference|the release process|§|\bkickoff\b|\bruling\b|\bratified\b|\bbacklog\b"
-    r"|\breview [A-Z][0-9]+\b|\bWeek[ -]+[0-9]+\b|\bStage[ -]+[0-9]+\b",
+    r"|Python reference|the release process|§|\bSpec\b|\bkickoff\b|\bruling\b|\bratified\b"
+    r"|\bamendment\b|\bbacklog\b|\bowner\b|\breview [A-Z][0-9]+\b|\bround[ -][0-9]+\b"
+    r"|\bWeek[ -]+[0-9]+\b|\bStage[ -]+[0-9]+\b|\bDecision [0-9]+\b|\bD[0-9]\b",
     re.IGNORECASE,
 )
 
-PUBLIC_TEXT_FILES = [README, STARTER, COMPOSE_FILE, AGENT_DIR / "agent.py", AGENT_DIR / "client.py",
-                     AGENT_DIR / "Dockerfile", REPO / ".github" / "workflows" / "checks.yml"]
+# The page describes the present: no narrative about how things used to be.
+HISTORY_LANGUAGE = re.compile(
+    r"\bformerly\b|\bpreviously\b|\bdescoped\b|\bprototype-era\b|\btoday\b"
+    r"|\bearlier (?:release|version)s?\b|\bsince (?:version|release|the [0-9]+\.[0-9])",
+    re.IGNORECASE,
+)
+
+PUBLIC_TEXT_FILES = sorted(
+    [README, STARTER, COMPOSE_FILE, AGENT_DIR / "agent.py", AGENT_DIR / "client.py",
+     AGENT_DIR / "Dockerfile", REPO / ".github" / "workflows" / "checks.yml", REPO / "docs" / "evidence" / "README.md"]
+    + [p for p in (REPO / "tests").rglob("*.py") if p.name != "test_readme.py"]  # the patterns live here
+    + [REPO / "tests" / "requirements.txt"]
+)
 
 
 def shell_fences(markdown: str) -> list[list[str]]:
@@ -101,6 +113,12 @@ def test_public_files_contain_no_internal_language(path):
     for number, line in enumerate(path.read_text().splitlines(), start=1):
         match = INTERNAL_LANGUAGE.search(line)
         assert match is None, f"{path.name}:{number}: {match.group(0)!r} in {line.strip()!r}"
+
+
+def test_readme_describes_the_present():
+    for number, line in enumerate(README.read_text().splitlines(), start=1):
+        match = HISTORY_LANGUAGE.search(line)
+        assert match is None, f"README.md:{number}: {match.group(0)!r} in {line.strip()!r}"
 
 
 def compose_default(name: str) -> str:

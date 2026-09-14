@@ -92,9 +92,9 @@ def secret_bytes() -> list[bytes]:
 
 
 def assert_secret_free(*texts: str):
-    for text in texts:
-        for value in secret_bytes():
-            assert value.decode(errors="ignore") not in text
+    # Computed first so a failure never prints the secret itself.
+    leaked = any(value.decode(errors="ignore") in text for text in texts for value in secret_bytes())
+    assert not leaked, "a secret value appears in the starter's output"
 
 
 def test_01_setup_is_idempotent(evidence):

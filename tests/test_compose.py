@@ -117,6 +117,7 @@ def test_every_container_runs_as_the_caller_without_ports_or_privileges(syntheti
         assert service["user"] == f"{UID}:{GID}", name
         assert service["read_only"] is True, name
         assert service["cap_drop"] == ["ALL"], name
+        assert service["security_opt"] == ["no-new-privileges:true"], name
         assert "ports" not in service, name
         assert service.get("privileged") is not True
     assert config["services"]["client"]["network_mode"] == "service:agent"

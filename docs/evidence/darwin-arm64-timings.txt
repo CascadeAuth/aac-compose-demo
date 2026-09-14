@@ -1,0 +1,22 @@
+2026-09-14T19:44:12Z guided setup (aac init) 0
+2026-09-14T19:44:26Z image download and build 13
+2026-09-14T19:45:16Z start until the sidecar is ready 2
+2026-09-14T19:45:16Z trust publication visible 0
+2026-09-14T19:45:24Z workflow exercise 0
+2026-09-14T19:46:12Z start until the sidecar is ready 7
+2026-09-14T19:46:12Z trust publication visible 0
+2026-09-14T19:46:13Z workflow exercise 1
+2026-09-14T19:47:40Z start until the sidecar is ready 7
+2026-09-14T19:47:41Z trust publication visible 1
+2026-09-14T19:53:33Z guided setup (aac init) 0
+2026-09-14T19:53:35Z image download and build 2
+2026-09-14T19:53:42Z start until the sidecar is ready 7
+2026-09-14T19:53:42Z trust publication visible 0
+2026-09-14T19:53:43Z workflow exercise 1
+2026-09-14T19:53:54Z start until the sidecar is ready 6
+2026-09-14T19:53:55Z trust publication visible 1
+2026-09-14T19:53:55Z workflow exercise 0
+2026-09-14T19:53:57Z start until the sidecar is ready 1
+2026-09-14T19:53:58Z trust publication visible 1
+2026-09-14T19:54:00Z start until the sidecar is ready 1
+2026-09-14T19:54:00Z trust publication visible 0

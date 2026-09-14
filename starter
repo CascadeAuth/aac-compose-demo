@@ -28,6 +28,9 @@ AAC_STARTER_TRUST_URL="${AAC_STARTER_TRUST_URL:-https://trust.stage.cascadeauth.
 # The CLI profile and workspace this starter uses. One profile = one tenant;
 # a second tenant is a deliberate choice of another profile name.
 AAC_STARTER_PROFILE="${AAC_STARTER_PROFILE:-stage}"
+# The workspace holds one workload's material and belongs to the profile that
+# created it (the CLI's default name is `starter`); a second tenant needs its
+# own workspace name as well as its own profile.
 AAC_STARTER_WORKSPACE="${AAC_STARTER_WORKSPACE:-starter}"
 AAC_CLI_MINIMUM="0.1.4"
 
@@ -86,8 +89,8 @@ workspace_status_json() {
   aac workspace status --workspace "$AAC_STARTER_WORKSPACE" --output json $flags 2>/dev/null || true
 }
 
-json_field() {  # json_field <document> <key>   -> the scalar value, unquoted
-  printf '%s' "$1" | grep -o "\"$2\": *\(\"[^\"]*\"\|true\|false\|null\)" | head -n1 \
+json_field() {  # json_field <document> <key>   -> the scalar value, unquoted; empty when absent
+  { printf '%s' "$1" | grep -o "\"$2\": *\(\"[^\"]*\"\|true\|false\|null\)" || true; } | head -n1 \
     | sed -e "s/\"$2\": *//" -e 's/^"//' -e 's/"$//'
 }
 
@@ -122,6 +125,23 @@ profile_has_tenant() {
   aac profile show "$AAC_STARTER_PROFILE" 2>/dev/null | grep -q '"tenant_id": *"tnt-'
 }
 
+refuse_foreign_workspace() {
+  # A workspace belongs to the profile that created it. Say so here, before
+  # `aac init` would create a new profile section and then refuse.
+  local document holder
+  [ -f "$CLI_HOME/workspaces/$AAC_STARTER_WORKSPACE/manifest.json" ] || return 0
+  document="$(workspace_status_json)"
+  holder="$(json_field "$document" profile)"
+  if [ -z "$holder" ]; then
+    say "starter: workspace '$AAC_STARTER_WORKSPACE' exists but the CLI cannot read it:"
+    aac workspace status --workspace "$AAC_STARTER_WORKSPACE" --output table >&2 || true
+    fail "fix the problem above, or choose another workspace: AAC_STARTER_WORKSPACE=<name> ./starter setup"
+  fi
+  if [ "$holder" != "$AAC_STARTER_PROFILE" ]; then
+    fail "workspace '$AAC_STARTER_WORKSPACE' belongs to profile '$holder', not '$AAC_STARTER_PROFILE'. Use AAC_STARTER_WORKSPACE=<another name> ./starter setup"
+  fi
+}
+
 renew_if_expired() {
   # The development certificates live one day (the CA seven). When the CLI
   # says the only problem is expiry, renew before anything else: `aac init`
@@ -133,7 +153,8 @@ renew_if_expired() {
   case "$(json_field "$document" next_command)" in
     *"workspace renew"*)
       say "== Renewing expired development certificates (aac workspace renew)"
-      aac workspace renew --workspace "$AAC_STARTER_WORKSPACE" --output table >&2 ;;
+      aac workspace renew --workspace "$AAC_STARTER_WORKSPACE" --output table >&2
+      say "   Renewed. The running containers, if any, still hold the old material until the next ./starter up." ;;
   esac
 }
 
@@ -143,9 +164,14 @@ cmd_setup() {
   local display_name="" contact="" idp="" yes="" started
   while [ $# -gt 0 ]; do
     case "$1" in
-      --display-name) display_name="$2"; shift 2 ;;
-      --contact)      contact="$2"; shift 2 ;;
-      --idp)          idp="$2"; shift 2 ;;
+      --display-name|--contact|--idp)
+        [ $# -ge 2 ] || fail "$1 needs a value (see ./starter help)"
+        case "$1" in
+          --display-name) display_name="$2" ;;
+          --contact)      contact="$2" ;;
+          --idp)          idp="$2" ;;
+        esac
+        shift 2 ;;
       --yes)          yes="--create-tenant"; shift ;;
       *) fail "unknown setup option: $1 (see ./starter help)" ;;
     esac
@@ -154,11 +180,12 @@ cmd_setup() {
   if profile_points_elsewhere; then
     fail "CLI profile '$AAC_STARTER_PROFILE' already points at another control plane. Choose another name: AAC_STARTER_PROFILE=<name> ./starter setup"
   fi
+  refuse_foreign_workspace
 
   set -- --profile "$AAC_STARTER_PROFILE" --workspace "$AAC_STARTER_WORKSPACE" \
          --admin-url "$AAC_STARTER_ADMIN_URL" --data-plane-url "$AAC_STARTER_DATA_PLANE_URL" \
          --trust-url "$AAC_STARTER_TRUST_URL" --layout container --output table
-  if ! profile_has_tenant && [ ! -f "$COMPOSE_ENV" ]; then
+  if ! profile_has_tenant; then
     say "No tenant is registered under profile '$AAC_STARTER_PROFILE' yet."
     say "Registration signs you in with GitHub or Google; your account becomes the tenant's first administrator."
     [ -n "$display_name" ] || { printf 'Tenant display name (your team or project): ' >&2; read -r display_name; }
@@ -217,9 +244,9 @@ cmd_up() {
   preflight_tools
   require_healthy_workspace
   local started
-  say "== Starting agent, sidecar and publisher"
+  say "== Starting agent, sidecar and publisher (recreated, so they load the current keys and certificates)"
   started="$(now)"
-  compose up --detach --remove-orphans >&2
+  compose up --detach --remove-orphans --force-recreate >&2
   compose run --rm --no-deps client wait >&2
   record_timing "start until the sidecar is ready" "$(( $(now) - started ))"
   say "== Waiting for the published trust material to be visible at $AAC_STARTER_TRUST_URL"
@@ -268,7 +295,12 @@ cmd_logs() { compose logs --follow "$@"; }
 
 cmd_down() {
   say "== Stopping and removing the containers. The tenant, workspace and retained state stay where they are."
-  compose down --remove-orphans >&2
+  if [ -f "$COMPOSE_ENV" ]; then
+    compose down --remove-orphans >&2
+  else
+    # Without the workspace file the containers are still found by project name.
+    docker compose --project-name aac-starter down --remove-orphans >&2
+  fi
 }
 
 cmd_clean() {
@@ -278,7 +310,7 @@ cmd_clean() {
   say "Removed the local agent image and $RUNTIME_DIR. Nothing under $CLI_HOME was touched."
 }
 
-cmd_help() { sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//' >&2; }
+cmd_help() { awk 'NR > 1 { if ($0 !~ /^#/) exit; sub(/^# ?/, ""); print }' "$0" >&2; }
 
 command="${1:-help}"; [ $# -eq 0 ] || shift
 case "$command" in
