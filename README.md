@@ -211,6 +211,11 @@ out:
 Timings from the live test in `tests/live/`, one file per platform in
 `docs/evidence/`; they are measurements, not a promise.
 
+| Environment | `./starter setup`, tenant in place | `./starter up` | `./starter exercise` |
+|---|---|---|---|
+| Ubuntu 24.04 VM, arm64, Docker Engine 29.1, Compose 2.40 | 1.4 s | 15.2 s, rebuilding the agent image's dependencies; 1.8 s after `./starter down` | 1.0 s |
+| macOS 26, Apple silicon, Docker Desktop 29.7, Compose 5.5 | 1.5 s | 5.8 s; 2.4 s after `./starter down` | 0.8 s |
+
 On a fresh Ubuntu virtual machine with a new tenant, the steps added up to
 about 4.6 minutes, 247 s of it `aac init` with both browser sign-ins
 (`docs/evidence/`). Linux on amd64 has not been measured yet.

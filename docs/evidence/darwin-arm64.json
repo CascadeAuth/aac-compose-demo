@@ -7,51 +7,30 @@
   "docker": "29.7.2",
   "compose": "5.5.0",
   "aac_cli": "aac 0.1.5",
-  "measured_utc": "2026-09-14T20:38:28Z",
-  "steps": {
-    "setup_repeat_s": 2.9,
-    "up_s": 7.1,
-    "up_measured": {
-      "start until the sidecar is ready": "7",
-      "trust publication visible": "0"
-    },
-    "exercise_s": 0.3,
-    "exercise": {
-      "task_ref": "starter-2fb2d2a5-16e0-4a27-bbce-9e1b20c299c8",
-      "root_token_id": "e0ced11585e6875f0782cf33a60ae21769b9868c162c5863f8d591d72a762152",
-      "native_delivery": "delivered",
-      "a2a_dispatch_id": "034a5806-ea81-4e53-b942-6f9423890c80",
-      "a2a_retry": "same response bytes",
-      "durations_ms": {
-        "mint_to_settle": 5,
-        "a2a": 5,
-        "a2a_retry": 1
-      },
-      "local_evidence": {
-        "events_for_root": [
-          "mint:success",
-          "receive:success",
-          "respond:success",
-          "dispatch:success"
-        ],
-        "terminal_attestation_present": true
-      },
-      "saved_dispatch": "/exercise/last-a2a-dispatch.json"
-    },
-    "check": {
-      "unsigned_and_wrongly_signed_calls": "refused with HTTP 401 before any handler ran",
-      "unknown_class_of_action": "refused by the sidecar (HTTP 404, ERR_CLASS_OF_ACTION_NOT_FOUND)",
-      "replay_profile": "basic",
-      "replay_backend": "memory"
-    },
-    "up_after_recreate_s": 7.0,
-    "identity_after_recreate": {
-      "tenant_id": "tnt-97d0232e-ccb7-4642-b959-ad761f8e0f8d",
-      "hosted_trust_domain": "tnt-97d0232e-ccb7-4642-b959-ad761f8e0f8d.tenants.stage.cascadeauth.dev",
-      "workload_spiffe_id": "spiffe://tnt-97d0232e-ccb7-4642-b959-ad761f8e0f8d.tenants.stage.cascadeauth.dev/demo/agent",
-      "root_key_id": "starter-root-v1"
-    },
-    "up_after_rebuild_s": 10.1,
-    "missing_credential": "refused; the CLI report was shown"
+  "starter_commit": "10e1ad17fb0d5f4a37b9007bf9524f34ec688941",
+  "starter_tracked_files_modified": false,
+  "measured_utc": "2026-09-14T23:17:45Z",
+  "seconds": {
+    "setup": 1.5,
+    "up": 5.8,
+    "exercise": 0.8,
+    "down": 3.3,
+    "up_again": 2.4,
+    "exercise_again": 0.9
+  },
+  "exercise": {
+    "task": "starter-940c2396: delivered",
+    "mint": "the sidecar minted root authority 94fca0166194... restricted to action:dev_noop,valid_until:1789428472",
+    "forward": "your agent decided forward; the sidecar handed the next step to self_receive, restricted to action:dev_noop,task_ref:starter-940c2396,valid_until:1789428172",
+    "receive": "the sidecar verified that step as its receiver, presented by spiffe://tnt-97d0232e-ccb7-4642-b959-ad761f8e0f8d.tenants.stage.cascadeauth.dev/demo/agent",
+    "settle": "your agent decided settle; the sidecar signed the terminal attestation eyJhbGciOiJFZERTQSIs...",
+    "a2a": "your agent's request went through the sidecar to self_a2a: dispatched",
+    "refused": "a call to your agent without the pairing signature: HTTP 401"
+  },
+  "identity": {
+    "tenant_id": "tnt-97d0232e-ccb7-4642-b959-ad761f8e0f8d",
+    "hosted_trust_domain": "tnt-97d0232e-ccb7-4642-b959-ad761f8e0f8d.tenants.stage.cascadeauth.dev",
+    "workload_spiffe_id": "spiffe://tnt-97d0232e-ccb7-4642-b959-ad761f8e0f8d.tenants.stage.cascadeauth.dev/demo/agent",
+    "root_key_id": "starter-root-v1"
   }
 }
