@@ -31,11 +31,13 @@ def show(step: str, text: str) -> None:
 
 
 def start_task(task: str) -> dict:
-    """Ask the sidecar to start a task. It mints the root authority and runs the whole flow.
+    """Ask the sidecar to start a task: it mints the root authority and calls your agent.
 
-    The person the work is done for is synthetic here; a real application
-    passes the signed-in user. The class of action names a policy in the
-    sidecar's configuration, and the payload is what the agent will see.
+    The sidecar answers with the root authority, its restrictions and your
+    agent's first decision. It carries out a `forward` after answering. The
+    person the work is done for is synthetic here; a real application passes
+    the signed-in user. The class of action names a policy in the sidecar's
+    configuration, and the payload is what the agent will see.
     """
     response = httpx.post(
         SIDECAR_TLS + "/v1/agent/mint-root",
@@ -53,10 +55,15 @@ def start_task(task: str) -> dict:
     return response.json()
 
 
-def recorded_events(root_token_id: str) -> dict:
-    """What the sidecar recorded for this task, by event type."""
+def follow_forward(root_token_id: str) -> dict:
+    """What the sidecar recorded while it carried out a forward, by event type.
+
+    Its `dispatch` record is written once the forwarded step has been answered,
+    so the client waits for that one.
+    """
     events = {}
-    for _ in range(10):  # the sidecar can finish writing a moment after it answers
+    for _ in range(30):
+        events = {}
         for line in EVENTS.read_text().splitlines():
             try:
                 event = json.loads(line)
@@ -64,10 +71,28 @@ def recorded_events(root_token_id: str) -> dict:
                 continue  # a line still being written
             if event.get("root_token_id") == root_token_id:
                 events[event["event_type"]] = event
-        if {"mint", "dispatch", "receive", "respond"} <= events.keys():
+        if "dispatch" in events:
             break
         time.sleep(0.5)
     return events
+
+
+def describe(event: dict) -> str:
+    """One recorded event in words, with the fields that show what happened."""
+    if event.get("result") != "success":
+        return f"{event.get('result')}: {event.get('failure_code')} {event.get('failure_detail', '')}".rstrip()
+    if event["event_type"] == "dispatch":
+        return (f"the sidecar handed the next step to {event.get('destination')}, "
+                f"restricted to {event.get('caveat_predicates')}")
+    if event["event_type"] == "receive":
+        return f"the sidecar verified that step as its receiver, presented by {event.get('presenter_spiffe_id')}"
+    if event["event_type"] == "respond":
+        decided = f"your agent decided {event.get('agent_decision_action')}"
+        attestation = event.get("terminal_attestation")
+        if attestation:
+            return f"{decided}; the sidecar signed the terminal attestation {attestation[:20]}..."
+        return decided
+    return json.dumps(event)
 
 
 def send_a2a_request(task: str) -> dict:
@@ -110,18 +135,17 @@ def send_a2a_request(task: str) -> dict:
 def exercise() -> None:
     task = "starter-" + uuid.uuid4().hex[:8]
     started = start_task(task)
-    events = recorded_events(started["root_token_id"])
-    mint, dispatch = events.get("mint", {}), events.get("dispatch", {})
-    receive, respond = events.get("receive", {}), events.get("respond", {})
-
-    show("task", f"{task}: {started['delivery_status']}")
-    show("mint", f"the sidecar minted root authority {started['root_token_id'][:12]}... "
-                 f"restricted to {mint.get('caveat_predicates')}")
-    show("forward", f"your agent decided {dispatch.get('agent_decision_action')}; the sidecar handed the next step "
-                    f"to {dispatch.get('destination')}, restricted to {dispatch.get('caveat_predicates')}")
-    show("receive", f"the sidecar verified that step as its receiver, presented by {receive.get('presenter_spiffe_id')}")
-    show("settle", f"your agent decided {respond.get('agent_decision_action')}; the sidecar signed the "
-                   f"terminal attestation {respond.get('terminal_attestation', '')[:20]}...")
+    show("mint", f"the sidecar minted root authority {started['root_token_id'][:12]}... for task {task}, "
+                 f"restricted to {json.dumps(started['applied_predicates'], ensure_ascii=False)}")
+    show("agent", f"the sidecar called your agent ({started['delivery_status']}); "
+                  f"its answer: {json.dumps(started['agent_response'], ensure_ascii=False)}")
+    if started["delivery_status"] == "delivered" and started["agent_response"].get("action") == "forward":
+        events = follow_forward(started["root_token_id"])
+        for event_type in ("dispatch", "receive", "respond"):  # the order in which they happen
+            if event_type in events:
+                show(event_type, describe(events[event_type]))
+        if "dispatch" not in events:
+            show("dispatch", "no record of the forwarded step after 15 s; see: docker logs aac-starter-sidecar-1")
     show("a2a", f"your agent's request went through the sidecar to self_a2a: {send_a2a_request(task)['status']}")
     refused = httpx.post(AGENT + "/invoke", json={})
     show("refused", f"a call to your agent without the pairing signature: HTTP {refused.status_code}")
@@ -137,7 +161,7 @@ def wait_until_ready() -> None:
         except httpx.HTTPError:
             pass  # not listening yet
         time.sleep(1)
-    sys.exit("The sidecar is not ready after 90 s; see: docker compose logs sidecar")
+    sys.exit("The sidecar is not ready after 90 s; see: docker logs aac-starter-sidecar-1")
 
 
 if __name__ == "__main__":

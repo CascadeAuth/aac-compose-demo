@@ -97,35 +97,40 @@ and waits until the sidecar is ready and your public keys are published.
 You should see something like:
 
 ```text
-task      starter-425868e6: delivered
-mint      the sidecar minted root authority 35c9e381335c... restricted to action:dev_noop,valid_until:1789428108
-forward   your agent decided forward; the sidecar handed the next step to self_receive, restricted to action:dev_noop,task_ref:starter-425868e6,valid_until:1789427808
+mint      the sidecar minted root authority 35c9e381335c... for task starter-425868e6, restricted to {"action": "dev_noop", "valid_until": 1789428108}
+agent     the sidecar called your agent (delivered); its answer: {"action": "forward", "additional_predicates": {"task_ref": "starter-425868e6"}, "destination": "self_receive", "payload": {"step": "settle"}}
+dispatch  the sidecar handed the next step to self_receive, restricted to action:dev_noop,task_ref:starter-425868e6,valid_until:1789427808
 receive   the sidecar verified that step as its receiver, presented by spiffe://tnt-97d0232e-….tenants.stage.cascadeauth.dev/demo/agent
-settle    your agent decided settle; the sidecar signed the terminal attestation eyJhbGciOiJFZERTQSIs...
+respond   your agent decided settle; the sidecar signed the terminal attestation eyJhbGciOiJFZERTQSIs...
 a2a       your agent's request went through the sidecar to self_a2a: dispatched
 refused   a call to your agent without the pairing signature: HTTP 401
 ```
 
 ## How it works
 
-Each line is one hand-off. The client prints it from what the sidecar
-returned and from the sidecar's own record of events,
-`~/.aac/workspaces/starter/state/telemetry.jsonl`: one JSON object per line,
-where you can find the same values.
+Each line is one hand-off. The first two come from the sidecar's answer to
+the client; `dispatch`, `receive` and `respond` come from the sidecar's own
+record of events, `~/.aac/workspaces/starter/state/telemetry.jsonl` (one JSON
+object per line, named by `event_type`), where you can find the same values.
 
-**task, mint.** `start_task` in `agent/client.py` asks the sidecar to start a
-task for a person (a synthetic one here) under the class of action
-`demo_verify`. The sidecar mints a *root authority*: a signed token that says
-who the work is for and what it may do. Its restrictions, the action
-`dev_noop` and an expiry time, come from that class of action in the sidecar
-configuration `aac init` wrote.
+**mint.** `start_task` in `agent/client.py` asks the sidecar to start a task
+for a person (a synthetic one here) under the class of action `demo_verify`.
+The sidecar mints a *root authority*: a signed token that says who the work
+is for and what it may do. Its restrictions, the action `dev_noop` and an
+expiry time, come from that class of action in the sidecar configuration
+`aac init` wrote.
 
-**forward.** The sidecar calls your agent's `/invoke` with that authority,
-signed with the pairing secret the two share. `decide` in `agent/agent.py`
-answers `forward` to the destination `self_receive` and adds a restriction,
-`task_ref`. The sidecar mints the delegated step. Compare its restrictions
-with the root's: one more restriction and an earlier expiry. Authority only
-narrows as it is passed on.
+**agent.** The sidecar calls your agent's `/invoke` with that authority,
+signed with the pairing secret the two share, and returns your agent's answer
+to the client. `decide` in `agent/agent.py` answers `forward` to the
+destination `self_receive` and adds a restriction, `task_ref`. The sidecar
+answers the client at this point and carries out the forward afterwards; the
+client follows it in the record.
+
+**dispatch.** The sidecar mints the delegated step and sends it to
+`self_receive`. Compare its restrictions with the root's: one more
+restriction and an earlier expiry. Authority only narrows as it is passed on.
+The sidecar writes this record when the step has been answered.
 
 **receive.** `self_receive` is this same agent, so the delegated step comes
 back to the sidecar, which now checks it as its receiver: the signature chain
@@ -134,7 +139,7 @@ certified by your development CA), that the step is meant for this workload,
 and that it has not been seen before. The root key and CA it checks against
 are the ones the publisher uploaded to AAC.
 
-**settle.** The sidecar hands the verified step to your agent, which answers
+**respond.** The sidecar hands the verified step to your agent, which answers
 `settle`. The sidecar signs a *terminal attestation*: a receipt that the task
 finished under this authority.
 
@@ -156,7 +161,12 @@ Change `decide` in `agent/agent.py`, then:
 ./starter exercise
 ```
 
-`./starter up` rebuilds the agent image every time.
+`./starter up` rebuilds the agent image every time. The exercise shows only
+what happened: if your agent answers `refuse`, the `agent` line shows the
+refusal and nothing is forwarded. At the first step an agent may answer only
+`forward` or `refuse` (`settle` finishes a step it has received); the sidecar
+reports any other answer as a failed delivery, with the reason in the `agent`
+line.
 
 ## Stop and start again
 
@@ -199,7 +209,8 @@ out:
   should answer at once on Docker Desktop; if it hangs, restart Docker
   Desktop.
 * `./starter up` keeps waiting for your public keys:
-  `docker compose logs publisher` shows each upload attempt.
+  `docker logs aac-starter-publisher-1` shows each upload attempt.
+* Anything else the sidecar did: `docker logs aac-starter-sidecar-1`.
 * To see what `aac init` created and whether it is complete:
   `aac workspace status --workspace starter`.
 * Another tenant or workspace: set `AAC_STARTER_PROFILE` and

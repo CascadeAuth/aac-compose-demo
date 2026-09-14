@@ -26,7 +26,7 @@ pytestmark = pytest.mark.skipif(os.environ.get("AAC_STARTER_LIVE") != "1", reaso
 
 WORKSPACE = os.environ.get("AAC_STARTER_WORKSPACE", "starter")
 CLI_HOME = Path(os.environ.get("AAC_CLI_HOME", Path.home() / ".aac"))
-HAND_OFFS = ["task", "mint", "forward", "receive", "settle", "a2a", "refused"]
+HAND_OFFS = ["mint", "agent", "dispatch", "receive", "respond", "a2a", "refused"]
 
 
 def output_of(*command: str) -> str:
@@ -90,10 +90,10 @@ def test_03_exercise_shows_every_hand_off(evidence):
     lines = hand_offs(starter(evidence, "exercise"))
     evidence["exercise"] = lines
     assert list(lines) == HAND_OFFS
-    assert lines["task"].endswith(": delivered")
-    assert "decided forward" in lines["forward"] and "self_receive" in lines["forward"] and "task_ref:" in lines["forward"]
+    assert "(delivered)" in lines["agent"] and '"action": "forward"' in lines["agent"]
+    assert "self_receive" in lines["dispatch"] and "task_ref:" in lines["dispatch"]
     assert lines["receive"].endswith(identity()["workload_spiffe_id"])
-    assert "decided settle" in lines["settle"]
+    assert "decided settle" in lines["respond"]
     assert lines["a2a"].endswith("dispatched")
     assert lines["refused"].endswith("HTTP 401")
 
@@ -111,6 +111,6 @@ def test_05_down_and_up_keep_the_same_identity(evidence):
     before = identity()
     starter(evidence, "down")
     starter(evidence, "up", "up_again")
-    assert hand_offs(starter(evidence, "exercise", "exercise_again"))["task"].endswith(": delivered")
+    assert "(delivered)" in hand_offs(starter(evidence, "exercise", "exercise_again"))["agent"]
     assert identity() == before
     evidence["identity"] = before
