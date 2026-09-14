@@ -7,23 +7,23 @@
   "docker": "29.7.2",
   "compose": "5.5.0",
   "aac_cli": "aac 0.1.5",
-  "starter_commit": "10e1ad17fb0d5f4a37b9007bf9524f34ec688941",
+  "starter_commit": "d76dd641564aa6c4ebd18fc0cd6fab73f529838b",
   "starter_tracked_files_modified": false,
-  "measured_utc": "2026-09-14T23:17:45Z",
+  "measured_utc": "2026-09-14T23:50:36Z",
   "seconds": {
-    "setup": 1.5,
-    "up": 5.8,
+    "setup": 1.9,
+    "up": 5.7,
     "exercise": 0.8,
     "down": 3.3,
-    "up_again": 2.4,
-    "exercise_again": 0.9
+    "up_again": 1.7,
+    "exercise_again": 0.8
   },
   "exercise": {
-    "task": "starter-940c2396: delivered",
-    "mint": "the sidecar minted root authority 94fca0166194... restricted to action:dev_noop,valid_until:1789428472",
-    "forward": "your agent decided forward; the sidecar handed the next step to self_receive, restricted to action:dev_noop,task_ref:starter-940c2396,valid_until:1789428172",
+    "mint": "the sidecar minted root authority ca44fe5e0f7a... for task starter-ff848c31, restricted to {\"action\": \"dev_noop\", \"valid_until\": 1789430443}",
+    "agent": "the sidecar called your agent (delivered); its answer: {\"action\": \"forward\", \"additional_predicates\": {\"task_ref\": \"starter-ff848c31\"}, \"destination\": \"self_receive\", \"payload\": {\"step\": \"settle\"}}",
+    "dispatch": "the sidecar handed the next step to self_receive, restricted to action:dev_noop,task_ref:starter-ff848c31,valid_until:1789430143",
     "receive": "the sidecar verified that step as its receiver, presented by spiffe://tnt-97d0232e-ccb7-4642-b959-ad761f8e0f8d.tenants.stage.cascadeauth.dev/demo/agent",
-    "settle": "your agent decided settle; the sidecar signed the terminal attestation eyJhbGciOiJFZERTQSIs...",
+    "respond": "your agent decided settle; the sidecar signed the terminal attestation eyJhbGciOiJFZERTQSIs...",
     "a2a": "your agent's request went through the sidecar to self_a2a: dispatched",
     "refused": "a call to your agent without the pairing signature: HTTP 401"
   },
