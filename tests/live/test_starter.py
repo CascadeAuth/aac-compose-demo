@@ -41,10 +41,28 @@ def starter(*args: str, expect: int = 0) -> subprocess.CompletedProcess:
     return result
 
 
+def json_documents(text: str) -> list[dict]:
+    """Every top-level JSON object printed on stdout, in order (the client's summaries)."""
+    decoder, documents, position = json.JSONDecoder(), [], 0
+    while True:
+        start = text.find("\n{", position)
+        if start < 0 and position == 0 and text.startswith("{"):
+            start = -1
+        elif start < 0:
+            return documents
+        try:
+            document, end = decoder.raw_decode(text, start + 1)
+        except json.JSONDecodeError:
+            position = start + 2
+            continue
+        documents.append(document)
+        position = end
+
+
 def last_json(text: str) -> dict:
-    """The JSON document printed last on stdout (the client's summary)."""
-    start = text.rfind("\n{")
-    return json.loads(text[start + 1 :] if start >= 0 else text)
+    documents = json_documents(text)
+    assert documents, text
+    return documents[-1]
 
 
 @pytest.fixture(scope="module")
@@ -111,7 +129,7 @@ def test_03_exercise_completes_the_workflow(evidence):
 
 def test_04_check_probes_refusals(evidence):
     result = starter("check")
-    probe = last_json(result.stdout.split("== Published trust")[0]) if "== Published trust" in result.stdout else last_json(result.stdout)
+    probe = json_documents(result.stdout)[0]  # the probe summary; the CLI's table follows it
     evidence["steps"]["check"] = probe
     assert probe["replay_profile"] == "basic"
     assert "HTTP 401" in probe["unsigned_and_wrongly_signed_calls"]

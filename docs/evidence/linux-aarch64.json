@@ -1,0 +1,57 @@
+{
+  "platform": {
+    "system": "Linux",
+    "machine": "aarch64",
+    "release": "6.8.0-139-generic"
+  },
+  "docker": "29.1.3",
+  "compose": "2.40.3+ds1-0ubuntu1~24.04.1",
+  "aac_cli": "aac 0.1.5",
+  "measured_utc": "2026-09-14T19:57:45Z",
+  "steps": {
+    "setup_repeat_s": 2.4,
+    "up_s": 7.6,
+    "up_measured": {
+      "start until the sidecar is ready": "7",
+      "trust publication visible": "0"
+    },
+    "exercise_s": 0.3,
+    "exercise": {
+      "task_ref": "starter-91b4aef9-b1a9-4f7b-bff9-367a394e0761",
+      "root_token_id": "9e62c89ae41fefd07dfe3c4b0de88521256ec268ea4afc47aeda4bfe12529c82",
+      "native_delivery": "delivered",
+      "a2a_dispatch_id": "a0f1471c-3b82-4f7b-a287-48b54106d483",
+      "a2a_retry": "same response bytes",
+      "durations_ms": {
+        "mint_to_settle": 4,
+        "a2a": 8,
+        "a2a_retry": 2
+      },
+      "local_evidence": {
+        "events_for_root": [
+          "mint:success",
+          "receive:success",
+          "respond:success",
+          "dispatch:success"
+        ],
+        "terminal_attestation_present": true
+      },
+      "saved_dispatch": "/exercise/last-a2a-dispatch.json"
+    },
+    "check": {
+      "unsigned_and_wrongly_signed_calls": "refused with HTTP 401 before any handler ran",
+      "unknown_class_of_action": "refused by the sidecar (HTTP 404)",
+      "replay_profile": "basic",
+      "replay_backend": "memory"
+    },
+    "up_after_recreate_s": 7.2,
+    "identity_after_recreate": {
+      "tenant_id": "tnt-f4d17ac1-3be0-4c1a-8b4b-8527207becf3",
+      "hosted_trust_domain": "tnt-f4d17ac1-3be0-4c1a-8b4b-8527207becf3.tenants.stage.cascadeauth.dev",
+      "workload_spiffe_id": "spiffe://tnt-f4d17ac1-3be0-4c1a-8b4b-8527207becf3.tenants.stage.cascadeauth.dev/demo/agent",
+      "root_key_id": "starter-root-v1"
+    },
+    "up_after_rebuild_s": 7.6,
+    "missing_credential": "refused; the CLI report was shown"
+  }
+}

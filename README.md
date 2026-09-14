@@ -143,14 +143,16 @@ refused with HTTP 401 before any handler runs.
 Timings are measured, not promised; they depend on your network and your
 sign-in speed. `./starter status` prints the timings of your own runs.
 
-| Environment | Guided setup (`aac init`, two sign-ins included) | Image download and build | Start until ready | Trust visible | Exercise |
-|---|---|---|---|---|---|
-| Ubuntu 24.04 VM, arm64, Docker Engine 29.1, Compose 2.40 — fresh machine, new tenant | 247 s | see `docs/evidence/linux-aarch64.json` | | | |
-| macOS 15, Apple silicon, Docker Desktop 29.7, Compose 5.5 — existing tenant, repeat run | 0 s (already complete) | 13 s (images cached; a cold pull of the two images took 6–7 minutes on this network) | 2–7 s | 0–1 s (already published) | 1 s |
+| Environment | Guided setup (`aac init`, two browser sign-ins included) | Image download and build | Start until ready | Trust visible | Exercise | First authenticated success |
+|---|---|---|---|---|---|---|
+| Ubuntu 24.04 VM, arm64, Docker Engine 29.1, Compose 2.40 — fresh machine, new tenant | 247 s | 21 s (cold) | 6–7 s | 0–1 s | 1 s | about 4.6 minutes, sign-ins included |
+| macOS 15, Apple silicon, Docker Desktop 29.7, Compose 5.5 — existing tenant, repeat runs | 0–3 s (already complete) | 13 s with cached images; the cold pull of the two images took 6–7 minutes on that network | 2–7 s | 0–1 s | 0–1 s | under 30 s |
 
-Fresh-machine numbers are in `docs/evidence/`, written by the live test
-harness (`tests/live/`). Sign-in time is yours: the guided-setup figure
-above is dominated by the two browser sign-ins.
+The numbers come from `docs/evidence/` (the live test harness in `tests/live/`
+writes one file per platform, and the VM's complete timing log is beside it).
+Sign-in time is yours: the guided-setup figure is dominated by the two
+browser sign-ins, and the download figure by your connection to the
+registries.
 
 ## Running it again
 
