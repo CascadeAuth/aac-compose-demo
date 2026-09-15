@@ -24,11 +24,27 @@ compose() {
 }
 
 trust_is_published() {
-  # The publisher uploads your public root key and CA certificate to AAC, which
-  # serves them at the trust URL; every sidecar that verifies your work reads them there.
+  # The publisher signs your public root key and development CA certificate
+  # with your tenant-admin key and uploads them to AAC, which serves them at
+  # the trust URL; every sidecar that checks what yours signs reads them there.
+  # The CLI reads them back from that URL.
   local report
   report="$(aac workspace status --workspace "$WORKSPACE" --remote --output json 2>/dev/null || true)"
   [[ $report == *'"contains_root_key_id": true'* && $report == *'"contains_ca_anchor_id": true'* ]]
+}
+
+wait_for_published_keys() {
+  # A first upload usually shows within seconds; five minutes is generous.
+  local deadline
+  deadline=$(( $(date +%s) + 300 ))
+  until trust_is_published; do
+    if [ "$(date +%s)" -ge "$deadline" ]; then
+      echo "Your public keys are still not served at $TRUST_URL after 5 minutes." >&2
+      echo "The publisher's log shows each upload attempt: docker logs aac-starter-publisher-1" >&2
+      exit 1
+    fi
+    sleep 2
+  done
 }
 
 command="${1:-help}"
@@ -40,10 +56,12 @@ case "$command" in
     compose pull sidecar publisher
     ;;
   up)
+    echo "Building the agent image and starting the agent, the sidecar and the publisher ..."
     compose up --detach --build --force-recreate   # rebuilt and recreated: your latest agent code and keys
-    compose run --rm client wait                   # until the sidecar has loaded its identity
-    echo "Waiting until your public keys are published at $TRUST_URL ..."
-    until trust_is_published; do sleep 2; done
+    echo "Waiting until the sidecar is ready ..."
+    compose run --rm client wait                   # it has loaded its identity, keys and configuration
+    echo "Waiting until AAC serves your public keys at $TRUST_URL (the publisher uploads them) ..."
+    wait_for_published_keys
     echo "Running. Next: ./starter exercise"
     ;;
   exercise)

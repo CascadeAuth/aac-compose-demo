@@ -85,8 +85,19 @@ exists, `./starter setup` needs no options and changes nothing.
 ./starter up
 ```
 
-This builds the agent image, starts the agent, the sidecar and the publisher,
-and waits until the sidecar is ready and your public keys are published.
+This builds the agent image and starts the agent, the sidecar and the
+publisher, then waits for two things, saying before each which it is waiting
+for:
+
+1. **The sidecar is ready**: it has loaded its identity, keys and
+   configuration. It gives up after 90 seconds.
+2. **AAC serves your public keys.** The publisher signs your public root key
+   and development CA certificate with your tenant-admin key and uploads them
+   to AAC, which serves them at `https://trust.stage.cascadeauth.dev`. Every
+   sidecar that checks what yours signs, yours included, reads them there.
+   `./starter up` has the CLI read them back from that address, and gives up
+   after five minutes. After the first start they are already there, so this
+   takes a moment.
 
 ### 4. Run a task
 
@@ -208,7 +219,7 @@ out:
   answering. `printf 'https://index.docker.io/v1/' | docker-credential-desktop get`
   should answer at once on Docker Desktop; if it hangs, restart Docker
   Desktop.
-* `./starter up` keeps waiting for your public keys:
+* `./starter up` gives up waiting for your public keys after five minutes:
   `docker logs aac-starter-publisher-1` shows each upload attempt.
 * Anything else the sidecar did: `docker logs aac-starter-sidecar-1`.
 * To see what `aac init` created and whether it is complete:
