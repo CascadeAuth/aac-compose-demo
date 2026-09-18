@@ -22,7 +22,7 @@ SIDECAR_API = "http://127.0.0.1:8080"  # the sidecar's local API, for its own ag
 AGENT = "http://127.0.0.1:8000"  # the agent itself
 
 PAIRING_SECRET = Path(os.environ["AAC_INVOKE_AUTH_SECRET_FILE"]).read_bytes().strip()
-DEV_CA = os.environ["AAC_STARTER_CA_FILE"]  # issued the sidecar's TLS certificate
+CA_FILE = os.environ["AAC_STARTER_CA_FILE"]  # issued the sidecar's TLS certificate
 EVENTS = Path(os.environ["AAC_STARTER_EVIDENCE_FILE"])  # the sidecar's record, one JSON event per line
 
 
@@ -41,7 +41,7 @@ def start_task(task: str) -> dict:
     """
     response = httpx.post(
         SIDECAR_TLS + "/v1/agent/mint-root",
-        verify=ssl.create_default_context(cafile=DEV_CA),
+        verify=ssl.create_default_context(cafile=CA_FILE),
         timeout=60,
         json={
             "human_originator": {"iss": "https://synthetic.invalid", "sub": "starter-only",

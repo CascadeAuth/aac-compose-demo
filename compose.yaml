@@ -3,7 +3,7 @@
 # itself is hosted (stage); nothing here runs it.
 #
 # Every ${AAC_...} value comes from the compose.env file `aac init` writes for
-# your workspace: where your keys, certificates and sidecar configuration are.
+# your agent: where your keys, certificates and sidecar configuration are.
 # Run the stack through ./starter, which passes that file and your user id.
 name: aac-starter
 
@@ -21,14 +21,14 @@ services:
     environment:
       AAC_INVOKE_AUTH_SECRET_FILE: /run/secrets/pairing.secret
     volumes:
-      - {type: bind, source: "${AAC_WORKSPACE_PAIR_DIR:?}", target: /run/secrets, read_only: true}
+      - {type: bind, source: "${AAC_AGENT_SHARED_DIR:?}", target: /run/secrets, read_only: true}
 
   # The AAC sidecar, the published image. It joins the agent's network, so the
   # agent (127.0.0.1:8000), the sidecar's local API (127.0.0.1:8080) and its TLS
   # listener (127.0.0.1:9443) talk over one loopback interface, and nothing is
   # published on your machine.
   sidecar:
-    image: docker.io/cascadeauth/aac-sidecar:v0.2.0
+    image: docker.io/cascadeauth/aac-sidecar:v0.3.1
     user: *run-as-you
     network_mode: service:agent
     depends_on: [agent]
@@ -36,13 +36,13 @@ services:
     volumes:
       # The configuration `aac init` wrote, and the workload's keys and certificates.
       - {type: bind, source: "${AAC_SIDECAR_CONFIG_FILE:?}", target: /etc/aac/sidecar-config.yaml, read_only: true}
-      - {type: bind, source: "${AAC_WORKSPACE_PKI_DIR:?}", target: /etc/aac/pki, read_only: true}
+      - {type: bind, source: "${AAC_AGENT_SIDECAR_DIR:?}", target: /etc/aac/pki, read_only: true}
       # The pairing secret it signs agent calls with, and the tenant API key it
       # uses to fetch the workload's registration from AAC.
-      - {type: bind, source: "${AAC_WORKSPACE_PAIR_DIR:?}/pairing.secret", target: /run/secrets/pairing.secret, read_only: true}
+      - {type: bind, source: "${AAC_AGENT_SHARED_DIR:?}/pairing.secret", target: /run/secrets/pairing.secret, read_only: true}
       - {type: bind, source: "${AAC_API_KEY_FILE:?}", target: /run/secrets/tenant-api-key, read_only: true}
       # Where it records what it does (telemetry.jsonl), one JSON event per line.
-      - {type: bind, source: "${AAC_WORKSPACE_STATE_DIR:?}", target: /var/lib/aac}
+      - {type: bind, source: "${AAC_AGENT_STATE_DIR:?}", target: /var/lib/aac}
 
   # The trust-anchor publisher, the published image. It signs your public root
   # key and development CA certificate with your tenant-admin key and uploads
@@ -74,9 +74,9 @@ services:
     network_mode: service:agent
     environment:
       AAC_INVOKE_AUTH_SECRET_FILE: /run/secrets/pairing.secret
-      AAC_STARTER_CA_FILE: /run/secrets/dev-ca.crt
+      AAC_STARTER_CA_FILE: /run/secrets/ca.crt
       AAC_STARTER_EVIDENCE_FILE: /var/lib/aac/telemetry.jsonl
     volumes:
-      - {type: bind, source: "${AAC_WORKSPACE_PAIR_DIR:?}", target: /run/secrets, read_only: true}
-      - {type: bind, source: "${AAC_WORKSPACE_STATE_DIR:?}", target: /var/lib/aac, read_only: true}
+      - {type: bind, source: "${AAC_AGENT_SHARED_DIR:?}", target: /run/secrets, read_only: true}
+      - {type: bind, source: "${AAC_AGENT_STATE_DIR:?}", target: /var/lib/aac, read_only: true}
     entrypoint: ["python", "client.py"]

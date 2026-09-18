@@ -49,7 +49,7 @@ follows.
    `aac init` wrote.
 6. **Say what is left out.** The README names what the example does not show
    (production deployment, durable replay protection, retries, several
-   tenants, Windows) and where that is documented.
+   tenants, native Windows) and where that is documented.
 7. **Tests keep the example working, nothing more.** The Compose file matches
    what the CLI writes, the agent refuses unsigned calls, the client runs the
    flow, and an opt-in live test measures the documented steps on a real

@@ -79,6 +79,12 @@ def aac_argv(command: str) -> list[str] | None:
         words.pop(0)
     if not words or words[0] != "aac":
         return None
+    # The network table uses an explicit ellipsis for the reader's identity.
+    # Substitute only that value; the verb and option still have to parse.
+    if "--spiffe-id" in words:
+        index = words.index("--spiffe-id") + 1
+        if words[index] == "…":
+            words[index] = "spiffe://example.com/demo/agent"
     return words[1:]
 
 
@@ -135,3 +141,25 @@ def test_version_pins_agree():
         assert f"`{version}`" in versions_table, version
     assert f"aac-invoke-auth[fastapi]=={invoke_auth}" in requirements
     assert f"pip install 'aac-cli=={cli}'" in readme
+
+
+def test_material_cases_match_the_pinned_cli():
+    from importlib.metadata import version
+    from aac_cli.material_cases import MATERIAL_CASES_START, MATERIAL_CASES_END, material_cases_markdown
+
+    assert version("aac-cli") == "0.2.0"
+    text = README.read_text()
+    assert text.count(MATERIAL_CASES_START) == text.count(MATERIAL_CASES_END) == 1
+    start = text.index(MATERIAL_CASES_START)
+    end = text.index(MATERIAL_CASES_END) + len(MATERIAL_CASES_END)
+    assert text[start:end] == material_cases_markdown(level=3).rstrip("\n")
+
+
+def test_platform_guidance_and_network_section_position():
+    text = README.read_text()
+    assert "Ubuntu 24.04 or newer virtual machine" in text
+    assert "Native Windows is not supported" in text
+    assert "Multipass" in text and "WSL2 with Ubuntu" in text
+    assert "has not been tested with this starter" in text
+    after_leaves_out = text.split("## What this example leaves out", 1)[1]
+    assert after_leaves_out.split("\n## ", 1)[1].startswith("From this example to a network of agents")

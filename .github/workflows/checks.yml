@@ -11,7 +11,7 @@ permissions:
 jobs:
   offline:
     # Everything that needs no tenant: the sample agent and client against
-    # test doubles, the compose file against a synthetic workspace, the
+    # test doubles, the compose file against a synthetic agent, the
     # README's commands against the CLI parser, and the shell script.
     runs-on: ubuntu-latest
     steps:

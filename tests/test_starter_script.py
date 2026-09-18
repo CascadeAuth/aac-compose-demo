@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import os
+import json
+import sys
 import shutil
 import subprocess
 
@@ -41,7 +43,7 @@ STAND_INS = {
     "docker": "#!/bin/sh\nexit 0\n",
     "sleep": "#!/bin/sh\nexit 0\n",
     "date": '#!/bin/sh\nnow=$(cat "$CLOCK" 2>/dev/null || echo 0)\necho $((now + 100)) > "$CLOCK"\necho "$now"\n',
-    "aac": '#!/bin/sh\necho "$AAC_REPORT"\n',
+    "aac": '#!/bin/sh\n[ "$*" = "agent status --agent starter --remote --output json" ] || exit 2\necho "$AAC_REPORT"\n',
 }
 PUBLISHED = '{"healthy": true, "remote": {"root_keys": {"contains_root_key_id": true}, "spiffe_bundle": {"contains_ca_anchor_id": true}}}'
 
@@ -78,3 +80,69 @@ def test_up_gives_up_after_five_minutes_without_the_keys(tmp_path):
     # The first reading (0) sets the deadline at 300; the checks read 100, 200
     # and 300 and give up at 300, leaving the stand-in clock at 400.
     assert int((tmp_path / "clock").read_text()) == 400
+
+
+@pytest.mark.parametrize("command,tail", [
+    ("setup", ["pull", "sidecar", "publisher"]),
+    ("exercise", ["run", "--rm", "client", "exercise"]),
+    ("down", ["down"]),
+])
+@pytest.mark.parametrize("custom", [False, True])
+def test_script_uses_the_agent_commands_and_generated_env(tmp_path, command, tail, custom):
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    for name in ("aac", "docker"):
+        script = bin_dir / name
+        script.write_text(f"#!{sys.executable}\n" + """
+import json, os, sys
+from pathlib import Path
+if Path(sys.argv[0]).name == "aac":
+    from aac_cli.cli import build_parser
+    build_parser().parse_args(sys.argv[1:])
+with open(os.environ["CALLS"], "a") as log:
+    log.write(json.dumps([Path(sys.argv[0]).name, sys.argv[1:],
+                         os.environ.get("AAC_STARTER_UID"), os.environ.get("AAC_STARTER_GID")]) + "\\n")
+""")
+        script.chmod(0o755)
+    home = tmp_path / "isolated home"
+    env = {k: v for k, v in os.environ.items() if not k.startswith("AAC_")}
+    env.update(PATH=f"{bin_dir}{os.pathsep}{os.environ['PATH']}", AAC_CLI_HOME=str(home), CALLS=str(tmp_path / "calls"))
+    profile, agent = ("test-team", "test-agent") if custom else ("stage", "starter")
+    if custom:
+        env.update(AAC_STARTER_PROFILE=profile, AAC_STARTER_AGENT=agent)
+    extra = ["--display-name", "Example Team", "--contact", "dev@example.com", "--idp", "github"] if command == "setup" else []
+    result = subprocess.run([str(STARTER), command, *extra], env=env, capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    calls = [json.loads(line) for line in (tmp_path / "calls").read_text().splitlines()]
+    if command == "setup":
+        assert calls[0][:2] == ["aac", ["init", "--profile", profile, "--agent", agent, "--layout", "container",
+            "--admin-url", "https://api.stage.cascadeauth.dev", "--data-plane-url", "https://api.stage.cascadeauth.dev",
+            "--trust-url", "https://trust.stage.cascadeauth.dev", *extra]]
+    assert calls[-1] == ["docker", ["compose", "--env-file", str(home / "agents" / agent / "compose.env"), *tail], str(os.getuid()), str(os.getgid())]
+
+
+@pytest.mark.parametrize("published", [True, False])
+def test_up_consumes_the_published_cli_status_json(synthetic_home, tmp_path, monkeypatch, capsys, published):
+    import httpx
+    from aac_cli.cli import main
+    from aac_cli.agent_layout import agent_paths
+    from aac_cli.agent_record import read_record
+
+    monkeypatch.setenv("AAC_CLI_HOME", str(synthetic_home))
+    record = read_record(agent_paths("starter", synthetic_home).record)
+    def public_document(url, **kwargs):
+        if "/aac-root-keys/" in url:
+            body = {"keys": [{"kid": record.root_key_id if published else "another-root"}]}
+        else:
+            body = {"document": {"trust_anchors": [{"anchor_id": record.ca_anchor_id if published else "another-ca"}]}}
+        return httpx.Response(200, json=body)
+    monkeypatch.setattr("aac_cli.agent_cli.httpx.get", public_document)
+    assert main(["agent", "status", "--agent", "starter", "--remote", "--output", "json"]) == 0
+    report = capsys.readouterr().out
+    status = json.loads(report)
+    assert status["agent"] == "starter" and status["healthy"] is True
+    assert status["root_key_id"] == "starter-root-v1"
+    assert status["remote"]["root_keys"]["contains_root_key_id"] is published
+    assert status["remote"]["spiffe_bundle"]["contains_ca_anchor_id"] is published
+    result = run_up(tmp_path, report)
+    assert result.returncode == (0 if published else 1), result.stderr
