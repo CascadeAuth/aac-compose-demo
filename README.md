@@ -315,18 +315,35 @@ The production case. Your own issuer has already signed the agent's certificates
 ## What was measured
 
 Timings from the live test in `tests/live/`, recorded in `docs/evidence/`;
-they are measurements, not a promise. The two rows below were measured on
-2026-09-14 at starter commit `d76dd64`, with aac-cli 0.1.5 and sidecar v0.2.0.
-They do not measure the versions pinned below.
+they are measurements, not a promise.
+
+On 2026-09-18, Ubuntu amd64 ran starter commit `f468dbb` with aac-cli 0.2.0
+and sidecar v0.3.1. All five live tests passed: the full exercise, unsigned
+call rejection, and the same identity after stopping and starting again.
+
+| Environment | `./starter setup`, tenant in place | `./starter up` | `./starter exercise` |
+|---|---|---|---|
+| Ubuntu 24.04.4, amd64, EC2 t3.medium, Docker Engine 29.8, Compose 5.5 | 1.2 s | 13.4 s with the first agent image build; 3.2 s after `./starter down` | 1.3 s |
+
+Fresh setup took 215.25 s including both browser sign-ins and the cold
+sidecar/publisher downloads. Fresh setup, first startup and the exercise
+added up to about 3.8 minutes. This excludes host provisioning, CLI
+installation, code transfer, offline checks and idle gaps between commands.
+See [the evidence notes](docs/evidence/README.md) for tool/image versions,
+host access details and timing limitations. The temporary host and its
+supporting resources were destroyed after the evidence was retrieved.
+
+The two measurements below are from 2026-09-14 at starter commit `d76dd64`,
+with aac-cli 0.1.5 and sidecar v0.2.0. They do not measure the versions
+pinned below.
 
 | Environment | `./starter setup`, tenant in place | `./starter up` | `./starter exercise` |
 |---|---|---|---|
 | Ubuntu 24.04 VM, arm64, Docker Engine 29.1, Compose 2.40 | 1.5 s | 12.3 s replacing running containers; 1.9 s after `./starter down` | 0.9 s |
 | macOS 26, Apple silicon, Docker Desktop 29.7, Compose 5.5 | 1.9 s | 5.7 s replacing running containers; 1.7 s after `./starter down` | 0.8 s |
 
-On a fresh Ubuntu virtual machine with a new tenant, the steps added up to
-about 4.6 minutes, 247 s of it `aac init` with both browser sign-ins
-(`docs/evidence/`). Linux on amd64 has not been measured yet.
+On that fresh Ubuntu arm64 VM with a new tenant, the steps added up to about
+4.6 minutes, 247 s of it `aac init` with both browser sign-ins.
 
 ## Versions
 
