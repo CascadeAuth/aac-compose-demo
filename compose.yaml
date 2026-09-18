@@ -45,7 +45,7 @@ services:
       - {type: bind, source: "${AAC_AGENT_STATE_DIR:?}", target: /var/lib/aac}
 
   # The trust-anchor publisher, the published image. It signs your public root
-  # key and development CA certificate with your tenant-admin key and uploads
+  # key and CA certificate with your tenant-admin key and uploads
   # them to AAC, which serves them to every sidecar that verifies your work.
   publisher:
     image: ghcr.io/cascadeauth/aac-trust-anchor-publisher:0.2.3

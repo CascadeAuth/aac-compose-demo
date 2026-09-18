@@ -24,7 +24,7 @@ compose() {
 }
 
 trust_is_published() {
-  # The publisher signs your public root key and development CA certificate
+  # The publisher signs your public root key and CA certificate
   # with your tenant-admin key and uploads them to AAC, which serves them at
   # the trust URL; every sidecar that checks what yours signs reads them there.
   # The CLI reads them back from that URL.

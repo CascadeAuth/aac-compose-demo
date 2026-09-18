@@ -121,8 +121,9 @@ with open(os.environ["CALLS"], "a") as log:
     assert calls[-1] == ["docker", ["compose", "--env-file", str(home / "agents" / agent / "compose.env"), *tail], str(os.getuid()), str(os.getgid())]
 
 
-@pytest.mark.parametrize("published", [True, False])
-def test_up_consumes_the_published_cli_status_json(synthetic_home, tmp_path, monkeypatch, capsys, published):
+@pytest.mark.parametrize("root_published", [True, False])
+@pytest.mark.parametrize("ca_published", [True, False])
+def test_up_consumes_the_published_cli_status_json(synthetic_home, tmp_path, monkeypatch, capsys, root_published, ca_published):
     import httpx
     from aac_cli.cli import main
     from aac_cli.agent_layout import agent_paths
@@ -132,9 +133,9 @@ def test_up_consumes_the_published_cli_status_json(synthetic_home, tmp_path, mon
     record = read_record(agent_paths("starter", synthetic_home).record)
     def public_document(url, **kwargs):
         if "/aac-root-keys/" in url:
-            body = {"keys": [{"kid": record.root_key_id if published else "another-root"}]}
+            body = {"keys": [{"kid": record.root_key_id if root_published else "another-root"}]}
         else:
-            body = {"document": {"trust_anchors": [{"anchor_id": record.ca_anchor_id if published else "another-ca"}]}}
+            body = {"document": {"trust_anchors": [{"anchor_id": record.ca_anchor_id if ca_published else "another-ca"}]}}
         return httpx.Response(200, json=body)
     monkeypatch.setattr("aac_cli.agent_cli.httpx.get", public_document)
     assert main(["agent", "status", "--agent", "starter", "--remote", "--output", "json"]) == 0
@@ -142,7 +143,8 @@ def test_up_consumes_the_published_cli_status_json(synthetic_home, tmp_path, mon
     status = json.loads(report)
     assert status["agent"] == "starter" and status["healthy"] is True
     assert status["root_key_id"] == "starter-root-v1"
-    assert status["remote"]["root_keys"]["contains_root_key_id"] is published
-    assert status["remote"]["spiffe_bundle"]["contains_ca_anchor_id"] is published
+    assert status["remote"]["root_keys"]["contains_root_key_id"] is root_published
+    assert status["remote"]["spiffe_bundle"]["contains_ca_anchor_id"] is ca_published
+    published = root_published and ca_published
     result = run_up(tmp_path, report)
     assert result.returncode == (0 if published else 1), result.stderr

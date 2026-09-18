@@ -4,7 +4,20 @@ Real runs of this starter against the AAC stage service. Nothing in these
 files is secret: identifiers, outcomes and durations only.
 
 The Ubuntu amd64 run on 2026-09-18 used starter commit
-`f468dbb1a9869ecf3b146602df47630b117ba7e4`, aac-cli 0.2.0 and sidecar v0.3.1:
+`f468dbb1a9869ecf3b146602df47630b117ba7e4`, aac-cli 0.2.0 and sidecar v0.3.1.
+
+## Component versions used in the 2026-09-18 measurement
+
+| Component | Measured version |
+|---|---|
+| AAC sidecar image | `v0.3.1` |
+| Trust-anchor publisher image | `0.2.3` |
+| `aac-invoke-auth` (in the agent image) | `0.1.2` |
+| `aac-cli` | `0.2.0` |
+
+These versions identify this test run; they are not a compatibility limit.
+The snapshot stays tied to the measured commit when the starter's dependencies
+change. Exact image digests and tool versions are in the run record below.
 
 * [`linux-x86_64-20260918T222443Z-f468dbb.json`](linux-x86_64-20260918T222443Z-f468dbb.json) records the five passing live tests' command
   durations, actual exercise output and unchanged identity after restart.
@@ -26,6 +39,8 @@ The starter checkout stayed clean. The host used standard CPU credits,
 which can throttle sustained load. Evidence was copied out and its checksum
 verified before full infrastructure teardown; the instance, disk, network
 and IAM resources were confirmed gone. Shared Terraform state history remains.
+
+## Measurements from 2026-09-14
 
 The macOS and Ubuntu arm64 JSON files were measured on 2026-09-14 at
 `d76dd641564aa6c4ebd18fc0cd6fab73f529838b`, with aac-cli 0.1.5 and sidecar

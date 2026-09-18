@@ -2,7 +2,7 @@
 
 * Every ``aac …`` command in a shell fence parses with the published CLI.
 * No project-internal vocabulary (work-item ids, agent names, review shorthand).
-* The versions the README names are the ones compose.yaml and the Dockerfile pin.
+* Test dependencies match the installation commands in the README and Dockerfile.
 """
 
 from __future__ import annotations
@@ -128,17 +128,11 @@ def test_readme_describes_the_present():
         assert match is None, f"README.md:{number}: {match.group(0)!r} in {line.strip()!r}"
 
 
-def test_version_pins_agree():
+def test_dependencies_match_installation_commands():
     readme = README.read_text()
-    versions_table = readme.split("## Versions")[1].split("## ")[0]
-    compose = COMPOSE_FILE.read_text()
     requirements = (REPO / "tests" / "requirements.txt").read_text()
-    sidecar = re.search(r"cascadeauth/aac-sidecar:(\S+)", compose).group(1)
-    publisher = re.search(r"aac-trust-anchor-publisher:(\S+)", compose).group(1)
     invoke_auth = re.search(r"aac-invoke-auth\[fastapi\]==([0-9.]+)", (AGENT_DIR / "Dockerfile").read_text()).group(1)
     cli = re.search(r"aac-cli==([0-9.]+)", requirements).group(1)
-    for version in (sidecar, publisher, invoke_auth, cli):
-        assert f"`{version}`" in versions_table, version
     assert f"aac-invoke-auth[fastapi]=={invoke_auth}" in requirements
     assert f"pip install 'aac-cli=={cli}'" in readme
 

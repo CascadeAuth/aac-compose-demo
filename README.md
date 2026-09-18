@@ -50,12 +50,14 @@ Choose where to run the commands:
 | Linux | Directly on Linux. |
 
 For a VM, we recommend [Multipass](https://canonical.com/multipass), the setup
-used for the Ubuntu VM measurement below. WSL2 with Ubuntu is another option
+used for the Ubuntu VM test runs. WSL2 with Ubuntu is another option
 on Windows, but has not been tested with this starter. Install Python, Git
 and Docker Engine inside the VM, and run all the steps there.
 
 * Docker with Compose v2: Docker Desktop on macOS, or Docker Engine on Linux.
-  Run everything as your normal user.
+  Run everything as your normal user; `docker ps` must work without `sudo`.
+  On Linux, follow Docker's [post-installation steps](https://docs.docker.com/engine/install/linux-postinstall/)
+  to give your user Docker access.
 * Python 3.10 or newer, for the `aac` command-line tool.
 * A GitHub or Google account. Registering signs you in, and that account
   becomes your tenant's administrator.
@@ -101,6 +103,7 @@ files, by default `~/.aac/agents/starter/`:
 | `sidecar/` | The sidecar, mounted at `/etc/aac/pki`. |
 | `agent/` | The agent and client, mounted at `/run/secrets`: `pairing.secret` and `ca.crt`. The sidecar also reads the pairing secret. |
 | `keep/` | You only: the development CA private key. Never mounted in a container; absent when you supply certificates. |
+| `archive/` | Files replaced by `aac agent renew --agent starter`; never mounted. |
 | `state/` | The sidecar's runtime records; the client reads `telemetry.jsonl`. |
 | `sidecar-config.yaml`, `compose.env`, `record.json` | The CLI's generated settings and setup record. |
 
@@ -122,7 +125,7 @@ for:
 1. **The sidecar is ready**: it has loaded its identity, keys and
    configuration. It gives up after 90 seconds.
 2. **AAC serves your public keys.** The publisher signs your public root key
-   and development CA certificate with your tenant-admin key and uploads them
+   and CA certificate with your tenant-admin key and uploads them
    to AAC, which serves them at `https://trust.stage.cascadeauth.dev`. Every
    sidecar that checks what yours signs, yours included, reads them there.
    `./starter up` has the CLI read them back from that address, and gives up
@@ -312,47 +315,8 @@ The production case. Your own issuer has already signed the agent's certificates
   `AAC_STARTER_AGENT` to new names for every `./starter` command (an
   agent belongs to the profile that created it).
 
-## What was measured
-
-Timings from the live test in `tests/live/`, recorded in `docs/evidence/`;
-they are measurements, not a promise.
-
-On 2026-09-18, Ubuntu amd64 ran starter commit `f468dbb` with aac-cli 0.2.0
-and sidecar v0.3.1. All five live tests passed: the full exercise, unsigned
-call rejection, and the same identity after stopping and starting again.
-
-| Environment | `./starter setup`, tenant in place | `./starter up` | `./starter exercise` |
-|---|---|---|---|
-| Ubuntu 24.04.4, amd64, EC2 t3.medium, Docker Engine 29.8, Compose 5.5 | 1.2 s | 13.4 s with the first agent image build; 3.2 s after `./starter down` | 1.3 s |
-
-Fresh setup took 215.25 s including both browser sign-ins and the cold
-sidecar/publisher downloads. Fresh setup, first startup and the exercise
-added up to about 3.8 minutes. This excludes host provisioning, CLI
-installation, code transfer, offline checks and idle gaps between commands.
-See [the evidence notes](docs/evidence/README.md) for tool/image versions,
-host access details and timing limitations. The temporary host and its
-supporting resources were destroyed after the evidence was retrieved.
-
-The two measurements below are from 2026-09-14 at starter commit `d76dd64`,
-with aac-cli 0.1.5 and sidecar v0.2.0. They do not measure the versions
-pinned below.
-
-| Environment | `./starter setup`, tenant in place | `./starter up` | `./starter exercise` |
-|---|---|---|---|
-| Ubuntu 24.04 VM, arm64, Docker Engine 29.1, Compose 2.40 | 1.5 s | 12.3 s replacing running containers; 1.9 s after `./starter down` | 0.9 s |
-| macOS 26, Apple silicon, Docker Desktop 29.7, Compose 5.5 | 1.9 s | 5.7 s replacing running containers; 1.7 s after `./starter down` | 0.8 s |
-
-On that fresh Ubuntu arm64 VM with a new tenant, the steps added up to about
-4.6 minutes, 247 s of it `aac init` with both browser sign-ins.
-
-## Versions
-
-| Component | Version |
-|---|---|
-| AAC sidecar image | `v0.3.1` |
-| Trust-anchor publisher image | `0.2.3` |
-| `aac-invoke-auth` (in the agent image) | `0.1.2` |
-| `aac-cli` (on your machine) | `0.2.0` |
+For dated test results and environment details, see the
+[validation evidence](docs/evidence/README.md).
 
 ## License
 
