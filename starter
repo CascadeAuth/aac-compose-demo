@@ -11,10 +11,10 @@ cd "$(dirname "$0")"
 # The hosted AAC stage service this example uses.
 AAC_URL="https://api.stage.cascadeauth.dev"
 TRUST_URL="https://trust.stage.cascadeauth.dev"
-# One CLI profile is one tenant; one workspace holds one workload's files.
+# One CLI profile is one tenant; one agent holds one workload's files.
 PROFILE="${AAC_STARTER_PROFILE:-stage}"
-WORKSPACE="${AAC_STARTER_WORKSPACE:-starter}"
-COMPOSE_ENV="${AAC_CLI_HOME:-$HOME/.aac}/workspaces/$WORKSPACE/compose.env"
+AGENT="${AAC_STARTER_AGENT:-starter}"
+COMPOSE_ENV="${AAC_CLI_HOME:-$HOME/.aac}/agents/$AGENT/compose.env"
 
 compose() {
   # compose.env, written by `aac init`, tells Compose where your files are.
@@ -24,12 +24,12 @@ compose() {
 }
 
 trust_is_published() {
-  # The publisher signs your public root key and development CA certificate
+  # The publisher signs your public root key and CA certificate
   # with your tenant-admin key and uploads them to AAC, which serves them at
   # the trust URL; every sidecar that checks what yours signs reads them there.
   # The CLI reads them back from that URL.
   local report
-  report="$(aac workspace status --workspace "$WORKSPACE" --remote --output json 2>/dev/null || true)"
+  report="$(aac agent status --agent "$AGENT" --remote --output json 2>/dev/null || true)"
   [[ $report == *'"contains_root_key_id": true'* && $report == *'"contains_ca_anchor_id": true'* ]]
 }
 
@@ -51,7 +51,7 @@ command="${1:-help}"
 [ $# -eq 0 ] || shift
 case "$command" in
   setup)
-    aac init --profile "$PROFILE" --workspace "$WORKSPACE" --layout container \
+    aac init --profile "$PROFILE" --agent "$AGENT" --layout container \
       --admin-url "$AAC_URL" --data-plane-url "$AAC_URL" --trust-url "$TRUST_URL" "$@"
     compose pull sidecar publisher
     ;;

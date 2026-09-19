@@ -6,7 +6,7 @@ place it registers nothing:
     AAC_STARTER_LIVE=1 AAC_STARTER_PROFILE=stage python -m pytest tests/live -q
 
 It runs `./starter` as a reader would, checks what each command prints, and
-writes how long each command took to docs/evidence/<platform>.json.
+writes durations to a dated, commit-attributed file under docs/evidence/.
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ from conftest import REPO, STARTER
 
 pytestmark = pytest.mark.skipif(os.environ.get("AAC_STARTER_LIVE") != "1", reason="set AAC_STARTER_LIVE=1")
 
-WORKSPACE = os.environ.get("AAC_STARTER_WORKSPACE", "starter")
+AGENT = os.environ.get("AAC_STARTER_AGENT", "starter")
 CLI_HOME = Path(os.environ.get("AAC_CLI_HOME", Path.home() / ".aac"))
 HAND_OFFS = ["mint", "agent", "dispatch", "receive", "respond", "a2a", "refused"]
 
@@ -44,7 +44,7 @@ def starter(evidence: dict, command: str, label: str | None = None) -> str:
 
 
 def assert_secret_free(text: str) -> None:
-    secrets = [(CLI_HOME / "workspaces" / WORKSPACE / "pair" / "pairing.secret").read_bytes().strip()]
+    secrets = [(CLI_HOME / "agents" / AGENT / "agent" / "pairing.secret").read_bytes().strip()]
     secrets += [key.read_bytes().strip() for key in (CLI_HOME / "credentials").glob("tnt-*") if key.suffix != ".session"]
     leaked = any(secret and secret.decode(errors="ignore") in text for secret in secrets)
     assert not leaked, "a secret value appears in the starter's output"  # the value itself is never printed
@@ -56,7 +56,7 @@ def hand_offs(stdout: str) -> dict:
 
 
 def identity() -> dict:
-    status = json.loads(output_of("aac", "workspace", "status", "--workspace", WORKSPACE, "--output", "json"))
+    status = json.loads(output_of("aac", "agent", "status", "--agent", AGENT, "--output", "json"))
     return {key: status[key] for key in ("tenant_id", "hosted_trust_domain", "workload_spiffe_id", "root_key_id")}
 
 
@@ -74,7 +74,9 @@ def evidence():
     }
     yield record
     starter(record, "down")
-    name = f"{platform.system().lower()}-{platform.machine().lower()}.json"
+    record["completed_utc"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    stamp = record["measured_utc"].replace("-", "").replace(":", "")
+    name = f"{platform.system().lower()}-{platform.machine().lower()}-{stamp}-{record['starter_commit'][:7]}.json"
     (REPO / "docs" / "evidence" / name).write_text(json.dumps(record, indent=2) + "\n")
 
 

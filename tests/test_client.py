@@ -23,7 +23,7 @@ def client_module(tmp_path: Path, monkeypatch):
     """The client module, imported with its settings pointing at test files."""
     (tmp_path / "pairing.secret").write_bytes(SECRET)
     monkeypatch.setenv("AAC_INVOKE_AUTH_SECRET_FILE", str(tmp_path / "pairing.secret"))
-    monkeypatch.setenv("AAC_STARTER_CA_FILE", str(tmp_path / "dev-ca.crt"))
+    monkeypatch.setenv("AAC_STARTER_CA_FILE", str(tmp_path / "ca.crt"))
     monkeypatch.setenv("AAC_STARTER_EVIDENCE_FILE", str(tmp_path / "telemetry.jsonl"))
     monkeypatch.syspath_prepend(str(AGENT_DIR))
     sys.modules.pop("client", None)

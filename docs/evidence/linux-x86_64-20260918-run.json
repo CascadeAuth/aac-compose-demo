@@ -1,0 +1,96 @@
+{
+  "starter_commit": "f468dbb1a9869ecf3b146602df47630b117ba7e4",
+  "started_utc": "2026-09-18T22:20:44.902792+00:00",
+  "completed_utc": "2026-09-18T22:25:25Z",
+  "environment": {
+    "description": "Ubuntu 24.04.4 LTS on EC2, amd64",
+    "region": "us-west-2",
+    "instance_type": "t3.medium",
+    "root_disk_gib": 20,
+    "root_disk_type": "gp3",
+    "cpu_credits": "standard",
+    "ami_id": "ami-04678417fc39d7171",
+    "ami_name": "ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-20260904"
+  },
+  "versions": {
+    "os_release": "PRETTY_NAME=\"Ubuntu 24.04.4 LTS\"\nNAME=\"Ubuntu\"\nVERSION_ID=\"24.04\"\nVERSION=\"24.04.4 LTS (Noble Numbat)\"\nVERSION_CODENAME=noble\nID=ubuntu\nID_LIKE=debian\nHOME_URL=\"https://www.ubuntu.com/\"\nSUPPORT_URL=\"https://help.ubuntu.com/\"\nBUG_REPORT_URL=\"https://bugs.launchpad.net/ubuntu/\"\nPRIVACY_POLICY_URL=\"https://www.ubuntu.com/legal/terms-and-policies/privacy-policy\"\nUBUNTU_CODENAME=noble\nLOGO=ubuntu-logo\n",
+    "kernel": "7.0.0-1012-aws",
+    "architecture": "x86_64",
+    "docker": "29.8.1",
+    "compose": "5.5.1",
+    "python": "3.12.3",
+    "git": "git version 2.43.0",
+    "aac_cli": "aac 0.2.0",
+    "sidecar": "aac-sidecar v0.3.1 (3ae954f415a95341b6993a173a6f421a5f9bcc5f, 2026-09-18T08:58:18-07:00)",
+    "starter_commit": "f468dbb1a9869ecf3b146602df47630b117ba7e4",
+    "images": {
+      "docker.io/cascadeauth/aac-sidecar:v0.3.1": {
+        "Id": "sha256:3750c19ee20d11c0faa18dab82f16618cc7fd3eb5ca7ca208cbf046d26b0baa2",
+        "RepoDigests": [
+          "cascadeauth/aac-sidecar@sha256:3750c19ee20d11c0faa18dab82f16618cc7fd3eb5ca7ca208cbf046d26b0baa2"
+        ],
+        "Architecture": "amd64",
+        "Os": "linux"
+      },
+      "ghcr.io/cascadeauth/aac-trust-anchor-publisher:0.2.3": {
+        "Id": "sha256:f2a4f0a9a00af4d5962f985341076a37a42eeb5cc1b4250d10989638ffe58b56",
+        "RepoDigests": [
+          "ghcr.io/cascadeauth/aac-trust-anchor-publisher@sha256:f2a4f0a9a00af4d5962f985341076a37a42eeb5cc1b4250d10989638ffe58b56"
+        ],
+        "Architecture": "amd64",
+        "Os": "linux"
+      },
+      "aac-compose-starter-agent:local": {
+        "Id": "sha256:608d72e67f79501461ab08dd30ae5eb99c87554586fd05fe07c2ba21c2faace6",
+        "RepoDigests": [
+          "aac-compose-starter-agent@sha256:608d72e67f79501461ab08dd30ae5eb99c87554586fd05fe07c2ba21c2faace6"
+        ],
+        "Architecture": "amd64",
+        "Os": "linux"
+      }
+    }
+  },
+  "first_setup": {
+    "command": "./starter setup (fresh tenant; GitHub; no browser on host)",
+    "started_utc": "2026-09-18T22:20:44.902792+00:00",
+    "ended_utc": "2026-09-18T22:24:20.155652+00:00",
+    "seconds": 215.25,
+    "exit_code": 0,
+    "includes": [
+      "both browser sign-ins",
+      "cold sidecar and publisher image downloads"
+    ],
+    "excludes": [
+      "host provisioning",
+      "candidate transfer",
+      "CLI installation",
+      "offline checks"
+    ]
+  },
+  "validation": {
+    "offline_tests_passed": 75,
+    "live_tests_passed": 5
+  },
+  "timing_notes": [
+    "Fresh setup includes both interactive browser sign-ins and cold sidecar/publisher downloads.",
+    "First up includes the first agent image build and both readiness waits. The publisher and sidecar images were pulled by setup.",
+    "The sum of fresh setup, first up and exercise is about 230 seconds; idle gaps between commands are excluded.",
+    "Host provisioning, candidate transfer, CLI installation and offline checks are outside these timings.",
+    "The host requires sudo docker. A temporary command outside the checkout used sudo --preserve-env=AAC_STARTER_UID,AAC_STARTER_GID /usr/bin/docker; containers ran as ssm-user (1001:1001).",
+    "The first offline check exposed missing UID/GID forwarding in that temporary sudo command; correcting it produced the recorded 75-pass result, with no candidate edits.",
+    "Standard CPU credits can throttle a t3.medium during sustained load. These are single-run observations, not performance guarantees."
+  ],
+  "retrieved_archive_sha256": "beb2ef87941fd0f5bf089a30ec3d7083eed9449f80b05390e5c9a2fd22c0f91f",
+  "teardown": {
+    "terraform_version": "1.13.0",
+    "aws_provider_version": "6.61.0",
+    "resources_destroyed": 16,
+    "destroy_completed_utc": "2026-09-18T22:28:01Z",
+    "verified_utc": "2026-09-18T22:29:23.823006+00:00",
+    "instance_state": "terminated",
+    "terraform_state_empty": true,
+    "native_ec2_inventories_empty": true,
+    "iam_role_and_instance_profile_absent": true,
+    "note": "Evidence retrieved and checksum verified before full destroy. Retained tag-index entries were checked against native terminated/NotFound results. Shared Terraform backend history remains."
+  }
+}

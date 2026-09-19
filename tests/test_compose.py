@@ -1,4 +1,4 @@
-"""The compose file against a synthetic workspace rendered by the CLI itself.
+"""The compose file against a synthetic agent rendered by the CLI itself.
 
 `docker compose config` resolves every variable and anchor exactly as a run
 would; the assertions pin the consumer (this repository) to the producer (the
@@ -13,7 +13,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
-from aac_cli.workspace_layout import (
+from aac_cli.agent_layout import (
     CONTAINER_SECRETS_DIRECTORY,
     CONTAINER_SIDECAR_DIRECTORY,
     CONTAINER_STATE_DIRECTORY,
@@ -29,7 +29,7 @@ UID, GID = "4242", "4243"
 def rendered(home: Path, tmp_path: Path, *profiles: str) -> dict:
     env = {**os.environ, "AAC_STARTER_UID": UID, "AAC_STARTER_GID": GID}
     command = ["docker", "compose", "--project-directory", str(REPO),
-               "--env-file", str(home / "workspaces" / "starter" / "compose.env")]
+               "--env-file", str(home / "agents" / "starter" / "compose.env")]
     for profile in profiles:
         command += ["--profile", profile]
     command += ["config", "--format", "json"]
@@ -49,16 +49,16 @@ def test_sidecar_mounts_exactly_what_the_container_layout_expects(synthetic_home
     by_target = mounts(sidecar)
     expected = {
         f"{CONTAINER_SIDECAR_DIRECTORY}/sidecar-config.yaml": values["AAC_SIDECAR_CONFIG_FILE"],
-        f"{CONTAINER_SIDECAR_DIRECTORY}/pki": values["AAC_WORKSPACE_PKI_DIR"],
-        f"{CONTAINER_SECRETS_DIRECTORY}/pairing.secret": values["AAC_WORKSPACE_PAIR_DIR"] + "/pairing.secret",
+        f"{CONTAINER_SIDECAR_DIRECTORY}/pki": values["AAC_AGENT_SIDECAR_DIR"],
+        f"{CONTAINER_SECRETS_DIRECTORY}/pairing.secret": values["AAC_AGENT_SHARED_DIR"] + "/pairing.secret",
         f"{CONTAINER_SECRETS_DIRECTORY}/tenant-api-key": values["AAC_API_KEY_FILE"],
-        CONTAINER_STATE_DIRECTORY: values["AAC_WORKSPACE_STATE_DIR"],
+        CONTAINER_STATE_DIRECTORY: values["AAC_AGENT_STATE_DIR"],
     }
     assert {target: mount["source"] for target, mount in by_target.items()} == expected
     for target, mount in by_target.items():
         assert mount.get("read_only", False) == (target != CONTAINER_STATE_DIRECTORY), target
     # Every path the rendered configuration names is served by one of these mounts.
-    sidecar_config = json.loads((synthetic_home / "manifest-for-tests.json").read_text())["sidecar_config"]
+    sidecar_config = json.loads((synthetic_home / "record-for-tests.json").read_text())["sidecar_config"]
     referenced = {
         sidecar_config["sidecar"]["agent_invoke_auth"]["secret_file"],
         sidecar_config["sidecar"]["tls_cert_file"], sidecar_config["sidecar"]["tls_key_file"],
@@ -75,11 +75,11 @@ def test_sidecar_mounts_exactly_what_the_container_layout_expects(synthetic_home
     # The development CA private key never enters a container.
     for service in config["services"].values():
         for mount in service.get("volumes", []):
-            assert not mount["source"].endswith("/ca") and "dev-ca.key" not in mount["source"]
+            assert not mount["source"].endswith("/keep") and "ca.key" not in mount["source"]
 
 
 def test_publisher_environment_matches_the_cli_render(synthetic_home, tmp_path):
-    from aac_cli.workspace_layout import tenant_paths
+    from aac_cli.agent_layout import tenant_paths
 
     config = rendered(synthetic_home, tmp_path)
     publisher = config["services"]["publisher"]
@@ -121,9 +121,9 @@ def test_every_container_runs_as_you_and_nothing_is_published(synthetic_home, tm
 
 def test_the_client_reads_the_record_the_sidecar_writes(synthetic_home, tmp_path):
     client = rendered(synthetic_home, tmp_path, "exercise")["services"]["client"]
-    sidecar_config = json.loads((synthetic_home / "manifest-for-tests.json").read_text())["sidecar_config"]
+    sidecar_config = json.loads((synthetic_home / "record-for-tests.json").read_text())["sidecar_config"]
     assert client["environment"]["AAC_STARTER_EVIDENCE_FILE"] == sidecar_config["sidecar"]["telemetry"]["sink"]
-    assert mounts(client)[CONTAINER_STATE_DIRECTORY]["source"] == compose_env_values(synthetic_home)["AAC_WORKSPACE_STATE_DIR"]
+    assert mounts(client)[CONTAINER_STATE_DIRECTORY]["source"] == compose_env_values(synthetic_home)["AAC_AGENT_STATE_DIR"]
 
 
 def test_the_client_is_not_part_of_a_plain_up(synthetic_home, tmp_path):
@@ -133,7 +133,27 @@ def test_the_client_is_not_part_of_a_plain_up(synthetic_home, tmp_path):
 def test_running_without_the_starter_variables_is_refused(synthetic_home, tmp_path):
     result = subprocess.run(
         ["docker", "compose", "--project-directory", str(REPO),
-         "--env-file", str(synthetic_home / "workspaces" / "starter" / "compose.env"), "config"],
+         "--env-file", str(synthetic_home / "agents" / "starter" / "compose.env"), "config"],
         capture_output=True, text=True, env={k: v for k, v in os.environ.items() if not k.startswith("AAC_STARTER_")})
     assert result.returncode != 0
     assert "./starter" in result.stderr
+
+
+def test_shared_material_has_the_ca_and_secret_but_no_signing_keys(synthetic_home, tmp_path):
+    config = rendered(synthetic_home, tmp_path, "exercise")
+    values = compose_env_values(synthetic_home)
+    shared = Path(values["AAC_AGENT_SHARED_DIR"])
+    assert {p.name for p in shared.iterdir()} == {"ca.crt", "pairing.secret"}
+    for name in ("agent", "client"):
+        service = config["services"][name]
+        assert mounts(service)[CONTAINER_SECRETS_DIRECTORY]["source"] == str(shared)
+        assert service["environment"]["AAC_INVOKE_AUTH_SECRET_FILE"] == "/run/secrets/pairing.secret"
+    assert config["services"]["client"]["environment"]["AAC_STARTER_CA_FILE"] == "/run/secrets/ca.crt"
+    for service in config["services"].values():
+        for mount in service.get("volumes", []):
+            source = Path(mount["source"])
+            assert source.exists(), source
+            assert source != Path(values["AAC_AGENT_DIR"])
+            assert source.name != "keep"
+    for name in ("agent", "client"):
+        assert not any(m["source"] == values["AAC_AGENT_SIDECAR_DIR"] for m in config["services"][name]["volumes"])

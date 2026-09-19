@@ -41,8 +41,23 @@ production concerns (see "What this example leaves out" below).
 
 ## What you need
 
+Choose where to run the commands:
+
+| Your computer | Where to run the starter |
+|---|---|
+| Windows | Inside an Ubuntu 24.04 or newer virtual machine. Native Windows is not supported. |
+| macOS | Inside an Ubuntu VM, or directly on macOS. |
+| Linux | Directly on Linux. |
+
+For a VM, we recommend [Multipass](https://canonical.com/multipass), the setup
+used for the Ubuntu VM test runs. WSL2 with Ubuntu is another option
+on Windows, but has not been tested with this starter. Install Python, Git
+and Docker Engine inside the VM, and run all the steps there.
+
 * Docker with Compose v2: Docker Desktop on macOS, or Docker Engine on Linux.
-  Run everything as your normal user.
+  Run everything as your normal user; `docker ps` must work without `sudo`.
+  On Linux, follow Docker's [post-installation steps](https://docs.docker.com/engine/install/linux-postinstall/)
+  to give your user Docker access.
 * Python 3.10 or newer, for the `aac` command-line tool.
 * A GitHub or Google account. Registering signs you in, and that account
   becomes your tenant's administrator.
@@ -54,7 +69,7 @@ production concerns (see "What this example leaves out" below).
 ```bash
 python3 -m venv ~/.aac-tools
 . ~/.aac-tools/bin/activate
-pip install 'aac-cli==0.1.5'
+pip install 'aac-cli==0.2.0'
 git clone https://github.com/CascadeAuth/aac-compose-starter.git
 cd aac-compose-starter
 ```
@@ -76,8 +91,26 @@ browser twice to sign in. Then it:
 4. creates the development keys and certificates and writes the sidecar
    configuration, all under `~/.aac/`;
 
-and finally downloads the sidecar and publisher images. Once your tenant
-exists, `./starter setup` needs no options and changes nothing.
+and finally downloads the sidecar and publisher images. Once setup is complete,
+`./starter setup` needs no options: it refreshes the generated settings while
+keeping your tenant and keys.
+
+One CLI profile names your tenant; one agent folder holds this workload's
+files, by default `~/.aac/agents/starter/`:
+
+| Generated path | Used by |
+|---|---|
+| `sidecar/` | The sidecar, mounted at `/etc/aac/pki`. |
+| `agent/` | The agent and client, mounted at `/run/secrets`: `pairing.secret` and `ca.crt`. The sidecar also reads the pairing secret. |
+| `keep/` | You only: the development CA private key. Never mounted in a container; absent when you supply certificates. |
+| `archive/` | Files replaced by `aac agent renew --agent starter`; never mounted. |
+| `state/` | The sidecar's runtime records; the client reads `telemetry.jsonl`. |
+| `sidecar-config.yaml`, `compose.env`, `record.json` | The CLI's generated settings and setup record. |
+
+The publisher reads your tenant's public material and admin signing key under
+`~/.aac/tenants/<tenant-id>/`. The sidecar also reads the tenant API key from
+`~/.aac/credentials/<tenant-id>`. The CLI writes every file; the starter only
+mounts them.
 
 ### 3. Start
 
@@ -92,7 +125,7 @@ for:
 1. **The sidecar is ready**: it has loaded its identity, keys and
    configuration. It gives up after 90 seconds.
 2. **AAC serves your public keys.** The publisher signs your public root key
-   and development CA certificate with your tenant-admin key and uploads them
+   and CA certificate with your tenant-admin key and uploads them
    to AAC, which serves them at `https://trust.stage.cascadeauth.dev`. Every
    sidecar that checks what yours signs, yours included, reads them there.
    `./starter up` has the CLI read them back from that address, and gives up
@@ -121,7 +154,7 @@ refused   a call to your agent without the pairing signature: HTTP 401
 
 Each line is one hand-off. The first two come from the sidecar's answer to
 the client; `dispatch`, `receive` and `respond` come from the sidecar's own
-record of events, `~/.aac/workspaces/starter/state/telemetry.jsonl` (one JSON
+record of events, `~/.aac/agents/starter/state/telemetry.jsonl` (one JSON
 object per line, named by `event_type`), where you can find the same values.
 
 **mint.** `start_task` in `agent/client.py` asks the sidecar to start a task
@@ -203,15 +236,69 @@ out:
   restart forgets them. Production uses the Shared durable profile.
 * **Retries and failure handling.** When something fails, the message from
   Docker, the CLI or the sidecar is what you see.
-* **More than one tenant or workload at a time**, and Windows.
-* **Anything but development material.** The keys and certificates
-  `aac init` creates are for this machine only. The certificates last one
-  day and the development CA seven.
+* **More than one tenant or workload at a time**, and native Windows.
+* **A production certificate lifecycle.** The default run uses development
+  material: leaf certificates last one day and the development CA seven.
+  The CLI’s two certificate cases are described below.
+
+## From this example to a network of agents
+
+| | Agent 1 (starts the task) | Agents 2–100 (receive and forward) |
+|---|---|---|
+| The sidecar | yes | yes |
+| An identity: a SPIFFE ID with a certificate and key from the tenant's own issuer, chaining to the CA the tenant publishes | yes | yes |
+| The workload registered with AAC (`aac tenant add-workload --spiffe-id …`, one per agent, scriptable) | yes | yes |
+| A root signing key (mints the chain's first authority) | yes | no — a forwarding sidecar narrows the authority it received and signs its proof with its own identity key |
+| A receipt-signing (terminal attestation) key | if it finishes tasks | agent 100, which finishes the task |
+| The sidecar config, the pairing secret shared with its agent, the tenant API key its sidecar uses to reach AAC | yes | yes |
+
+Once per tenant, not per agent: tenant registration and admin key; one publisher publishing the tenant's CA and the originators' root public keys (here only agent 1's). Worked example: a chain of 100 agents where agent n calls agent n+1.
+
+## Two ways to get your agent’s certificates
+
+The steps above use development material. The CLI also accepts certificates
+your own issuer signed; pass its flags through `./starter setup`. Both cases
+use the same container mounts. Supplying certificates alone does not make
+this teaching example a production deployment.
+
+<!-- material-cases:start -->
+
+<!-- Generated from aac_cli/material_cases.py. Do not edit by hand. -->
+
+### The CLI creates a development CA
+
+The laptop case. The CLI creates a certificate authority on this machine and signs the agent's identity, receipt and HTTPS certificates with it.
+
+**Flags.** No flags are needed. To reuse a development CA across agents, pass `--ca-key-file` and `--ca-cert-file` together; neither one alone.
+
+**Keys and signatures.** The CA and the two identity keys are Ed25519; the HTTPS key is EC P-256.
+
+**The CLI** creates a 7-day certificate authority and keeps its private key in the agent's keep/ folder; issues the workload, receipt and HTTPS certificates; publishes the CA certificate as a trust anchor named `<agent>-dev-ca`.
+
+**The CLI does not** ask you for anything from your own certificate authority.
+
+**Renewal.** `aac agent renew --agent <name>` issues fresh certificates from the same CA.
+
+### I bring my own CA
+
+The production case. Your own issuer has already signed the agent's certificates, and your CA private key never reaches this machine.
+
+**Flags.** All seven together: `--workload-cert-file`, `--terminal-cert-file` and `--tls-cert-file`, each with its key file (`--workload-key-file`, `--terminal-key-file`, `--tls-key-file`), plus `--ca-cert-file`. Never `--ca-key-file`: the CLI does not want your CA key.
+
+**Keys and signatures.** Your CA's key must be Ed25519 or EC P-256, and it must have signed each certificate with Ed25519 or ECDSA-with-SHA-256. The two identity keys may be Ed25519 or EC P-256; the HTTPS key must be EC P-256. RSA is not supported: the sidecar cannot verify against it.
+
+**The CLI** checks each certificate against its key, its issuer and its validity window; registers the workload and writes the settings files and the pairing secret; publishes your CA certificate as a trust anchor named `<agent>-ca`.
+
+**The CLI does not** create a certificate authority; issue any certificate; ask for, read or store your CA private key.
+
+**Renewal.** `aac agent renew --agent <name>` cannot reissue what it did not sign: it takes the replacements your issuer produced.
+
+<!-- material-cases:end -->
 
 ## Troubleshooting
 
 * After a day or more the development certificates have expired, and the
-  sidecar cannot use them. Run `aac workspace renew --workspace starter`,
+  sidecar cannot use them. Run `aac agent renew --agent starter`,
   then `./starter up`.
 * `error from registry: denied` while downloading: a stale registry login.
   Run `docker logout ghcr.io` (or `docker logout`); both images are public.
@@ -223,33 +310,13 @@ out:
   `docker logs aac-starter-publisher-1` shows each upload attempt.
 * Anything else the sidecar did: `docker logs aac-starter-sidecar-1`.
 * To see what `aac init` created and whether it is complete:
-  `aac workspace status --workspace starter`.
-* Another tenant or workspace: set `AAC_STARTER_PROFILE` and
-  `AAC_STARTER_WORKSPACE` to new names for every `./starter` command (a
-  workspace belongs to the profile that created it).
+  `aac agent status --agent starter`.
+* Another tenant or agent: set `AAC_STARTER_PROFILE` and
+  `AAC_STARTER_AGENT` to new names for every `./starter` command (an
+  agent belongs to the profile that created it).
 
-## What was measured
-
-Timings from the live test in `tests/live/`, one file per platform in
-`docs/evidence/`; they are measurements, not a promise.
-
-| Environment | `./starter setup`, tenant in place | `./starter up` | `./starter exercise` |
-|---|---|---|---|
-| Ubuntu 24.04 VM, arm64, Docker Engine 29.1, Compose 2.40 | 1.5 s | 12.3 s replacing running containers; 1.9 s after `./starter down` | 0.9 s |
-| macOS 26, Apple silicon, Docker Desktop 29.7, Compose 5.5 | 1.9 s | 5.7 s replacing running containers; 1.7 s after `./starter down` | 0.8 s |
-
-On a fresh Ubuntu virtual machine with a new tenant, the steps added up to
-about 4.6 minutes, 247 s of it `aac init` with both browser sign-ins
-(`docs/evidence/`). Linux on amd64 has not been measured yet.
-
-## Versions
-
-| Component | Version |
-|---|---|
-| AAC sidecar image | `v0.2.0` |
-| Trust-anchor publisher image | `0.2.3` |
-| `aac-invoke-auth` (in the agent image) | `0.1.2` |
-| `aac-cli` (on your machine) | `0.1.5` |
+For dated test results and environment details, see the
+[validation evidence](docs/evidence/README.md).
 
 ## License
 
