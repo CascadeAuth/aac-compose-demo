@@ -202,8 +202,9 @@ signed with the pairing secret; the sidecar mints authority for it and
 delivers it to `self_a2a`, again this same agent, through its A2A route.
 
 **refused.** A call to your agent without the pairing signature is turned
-away before your code runs. Only the sidecar, after it has checked AAC
-authority, reaches `decide`.
+away before your code runs. In this example the sidecar checks AAC authority
+and calls `decide`. The guard authenticates possession of the pair secret; an
+authorized originator holding that secret can also sign such calls.
 
 ## Make it your own
 
