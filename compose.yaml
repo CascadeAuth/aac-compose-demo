@@ -28,7 +28,7 @@ services:
   # listener (127.0.0.1:9443) talk over one loopback interface, and nothing is
   # published on your machine.
   sidecar:
-    image: docker.io/cascadeauth/aac-sidecar:v0.3.1
+    image: docker.io/cascadeauth/aac-sidecar:v0.4.0
     user: *run-as-you
     network_mode: service:agent
     depends_on: [agent]

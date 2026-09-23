@@ -57,8 +57,11 @@ class StandIn:
 
     def post(self, url: str, **request) -> httpx.Response:
         if url.endswith("/v1/agent/mint-root"):
-            assert request["json"]["class_of_action"] == "demo_verify"
-            task = request["json"]["task_ref"]
+            verify_invoke_request(secret=SECRET, method="POST", path="/v1/agent/mint-root",
+                                  headers=request["headers"], body=request["content"])
+            body = json.loads(request["content"])
+            assert body["class_of_action"] == "demo_verify"
+            task = body["task_ref"]
             self.record(event_type="mint", caveat_predicates="action:dev_noop,valid_until:2000")
             if self.delivery_status == "delivered" and self.agent_answer["action"] == "forward":
                 self.record(event_type="receive", presenter_spiffe_id=AGENT_SPIFFE_ID)

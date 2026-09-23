@@ -3,7 +3,8 @@
 The sidecar checks AAC authority before any work reaches this code. The two
 share a pairing secret: the sidecar signs every call it makes here, and the
 middleware below refuses a call without a valid signature before any handler
-runs, so only the sidecar can reach the business logic.
+runs. The guard authenticates possession of the pair secret: the authorized
+originator holding it can also sign callbacks inside this trusted boundary.
 
 * ``POST /invoke``: the sidecar delivers a piece of work it has verified; the
   agent answers with a decision the sidecar then carries out: ``forward``
