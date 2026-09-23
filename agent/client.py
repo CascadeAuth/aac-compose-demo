@@ -39,17 +39,19 @@ def start_task(task: str) -> dict:
     the signed-in user. The class of action names a policy in the sidecar's
     configuration, and the payload is what the agent will see.
     """
+    path = "/v1/agent/mint-root"
+    body = json.dumps({
+        "human_originator": {"iss": "https://synthetic.invalid", "sub": "starter-only",
+                             "auth_time_unix_seconds": int(time.time())},
+        "class_of_action": "demo_verify", "task_ref": task,
+        "payload": {"step": "forward"},
+    }).encode()
+    headers = {"Content-Type": "application/json"}
+    headers.update(sign_invoke_request(secret=PAIRING_SECRET, method="POST", path=path,
+                                       headers=headers, body=body))
     response = httpx.post(
-        SIDECAR_TLS + "/v1/agent/mint-root",
-        verify=ssl.create_default_context(cafile=CA_FILE),
-        timeout=60,
-        json={
-            "human_originator": {"iss": "https://synthetic.invalid", "sub": "starter-only",
-                                 "auth_time_unix_seconds": int(time.time())},
-            "class_of_action": "demo_verify",
-            "task_ref": task,
-            "payload": {"step": "forward"},
-        },
+        SIDECAR_TLS + path, headers=headers, content=body,
+        verify=ssl.create_default_context(cafile=CA_FILE), timeout=60,
     )
     response.raise_for_status()
     return response.json()

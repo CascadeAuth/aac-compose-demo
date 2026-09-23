@@ -159,6 +159,15 @@ object per line, named by `event_type`), where you can find the same values.
 
 **mint.** `start_task` in `agent/client.py` asks the sidecar to start a task
 for a person (a synthetic one here) under the class of action `demo_verify`.
+The client signs this native request with the same pair secret it already uses
+for A2A. Both mint aliases require that signature from sidecar v0.4.0. The client
+serializes once and sends the exact signed bytes; it does not retry mint after
+an uncertain result. Pairing freshness does not make chain creation idempotent.
+
+An authorized originator may hold this secret only inside the same trusted
+application boundary. It also gains callback-signing capability; it is not a
+mint-only credential. Never share it across agent pairs or tenants.
+
 The sidecar mints a *root authority*: a signed token that says who the work
 is for and what it may do. Its restrictions, the action `dev_noop` and an
 expiry time, come from that class of action in the sidecar configuration
