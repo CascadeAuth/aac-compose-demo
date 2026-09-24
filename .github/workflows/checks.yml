@@ -20,8 +20,7 @@ jobs:
         with:
           python-version: "3.12"
       - run: python -m pip install --quiet -r tests/requirements.txt
-      - run: sudo apt-get update -q && sudo apt-get install -y -q shellcheck
-      - run: shellcheck starter
+      - run: python -m py_compile demo agent/*.py tests/fixtures/*.py
       - run: python -m pytest tests -q --ignore tests/live
       # The sample agent image must build from a clean checkout.
       - run: docker build --quiet agent

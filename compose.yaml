@@ -1,55 +1,41 @@
-# The AAC Compose starter: your agent, the AAC sidecar beside it, the publisher
-# that makes your public keys available, and an example client. The AAC service
-# itself is hosted (stage); nothing here runs it.
-#
-# Every ${AAC_...} value comes from the compose.env file `aac init` writes for
-# your agent: where your keys, certificates and sidecar configuration are.
-# Run the stack through ./starter, which passes that file and your user id.
-name: aac-starter
-
-# The containers run as you, so they can read the key files `aac init` created
-# for you (readable by you only).
-x-run-as-you: &run-as-you "${AAC_STARTER_UID:?run this through ./starter}:${AAC_STARTER_GID:?run this through ./starter}"
+# One tenant's application, sidecar and publisher. ./demo starts this once
+# for each agent, with that agent's CLI-generated compose.env.
+name: aac-compose-demo-${AAC_DEMO_ROLE}
+x-user: &user "${AAC_DEMO_UID:?}:${AAC_DEMO_GID:?}"
 
 services:
-  # Your workload: agent/agent.py. It accepts only calls signed with the
-  # pairing secret it shares with the sidecar.
   agent:
     build: ./agent
-    image: aac-compose-starter-agent:local
-    user: *run-as-you
+    image: aac-compose-demo-agent:local
+    user: *user
     environment:
+      AAC_DEMO_ROLE: ${AAC_DEMO_ROLE:?}
+      AAC_DEMO_TEST_MODE: ${AAC_DEMO_TEST_MODE:-0}
+      AAC_DEMO_ACTIONS: /evidence/actions.jsonl
       AAC_INVOKE_AUTH_SECRET_FILE: /run/secrets/pairing.secret
     volumes:
       - {type: bind, source: "${AAC_AGENT_SHARED_DIR:?}", target: /run/secrets, read_only: true}
+      - {type: bind, source: "${AAC_AGENT_STATE_DIR:?}", target: /evidence}
+    networks:
+      peers:
+        aliases: ["${AAC_DEMO_ROLE:?}"]
 
-  # The AAC sidecar, the published image. It joins the agent's network, so the
-  # agent (127.0.0.1:8000), the sidecar's local API (127.0.0.1:8080) and its TLS
-  # listener (127.0.0.1:9443) talk over one loopback interface, and nothing is
-  # published on your machine.
   sidecar:
-    image: docker.io/cascadeauth/aac-sidecar:v0.4.0
-    user: *run-as-you
+    image: docker.io/cascadeauth/aac-sidecar:v0.4.1
+    user: *user
     network_mode: service:agent
     depends_on: [agent]
     command: ["-config", "/etc/aac/sidecar-config.yaml"]
     volumes:
-      # The configuration `aac init` wrote, and the workload's keys and certificates.
       - {type: bind, source: "${AAC_SIDECAR_CONFIG_FILE:?}", target: /etc/aac/sidecar-config.yaml, read_only: true}
       - {type: bind, source: "${AAC_AGENT_SIDECAR_DIR:?}", target: /etc/aac/pki, read_only: true}
-      # The pairing secret it signs agent calls with, and the tenant API key it
-      # uses to fetch the workload's registration from AAC.
       - {type: bind, source: "${AAC_AGENT_SHARED_DIR:?}/pairing.secret", target: /run/secrets/pairing.secret, read_only: true}
       - {type: bind, source: "${AAC_API_KEY_FILE:?}", target: /run/secrets/tenant-api-key, read_only: true}
-      # Where it records what it does (telemetry.jsonl), one JSON event per line.
       - {type: bind, source: "${AAC_AGENT_STATE_DIR:?}", target: /var/lib/aac}
 
-  # The trust-anchor publisher, the published image. It signs your public root
-  # key and CA certificate with your tenant-admin key and uploads
-  # them to AAC, which serves them to every sidecar that verifies your work.
   publisher:
     image: ghcr.io/cascadeauth/aac-trust-anchor-publisher:0.2.3
-    user: *run-as-you
+    user: *user
     environment:
       AAC_TAP_TENANT_ID: ${AAC_TENANT_ID:?}
       AAC_TAP_ADMIN_KEY_FILE: /keys/tenant-admin.pem
@@ -64,19 +50,23 @@ services:
       - {type: bind, source: "${AAC_TENANT_DIR:?}/tenant-admin.pem", target: /keys/tenant-admin.pem, read_only: true}
       - {type: bind, source: "${AAC_TENANT_DIR:?}/root-keys", target: /root-keys, read_only: true}
       - {type: bind, source: "${AAC_TENANT_DIR:?}/spiffe-bundle", target: /spiffe-bundle, read_only: true}
+    networks: [peers]
 
-  # The example client: agent/client.py, run by ./starter exercise inside the
-  # agent's network, where the sidecar's local ports are. `up` does not start it.
   client:
-    image: aac-compose-starter-agent:local
-    user: *run-as-you
+    image: aac-compose-demo-agent:local
+    user: *user
     profiles: [exercise]
     network_mode: service:agent
     environment:
       AAC_INVOKE_AUTH_SECRET_FILE: /run/secrets/pairing.secret
-      AAC_STARTER_CA_FILE: /run/secrets/ca.crt
-      AAC_STARTER_EVIDENCE_FILE: /var/lib/aac/telemetry.jsonl
+      AAC_DEMO_BOOKING_ID: ${AAC_DEMO_BOOKING_ID:-}
     volumes:
       - {type: bind, source: "${AAC_AGENT_SHARED_DIR:?}", target: /run/secrets, read_only: true}
-      - {type: bind, source: "${AAC_AGENT_STATE_DIR:?}", target: /var/lib/aac, read_only: true}
+      - {type: bind, source: "${AAC_DEMO_VANTIS_STATE:?}", target: /evidence/vantis, read_only: true}
+      - {type: bind, source: "${AAC_DEMO_TOURFEDIA_STATE:?}", target: /evidence/tourfedia, read_only: true}
     entrypoint: ["python", "client.py"]
+
+networks:
+  peers:
+    external: true
+    name: aac-compose-demo

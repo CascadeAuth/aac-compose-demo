@@ -1,11 +1,9 @@
-"""The example client: starts one task through the AAC sidecar and shows what each piece did.
+"""Vantis's authorized originator; wait for the actual asynchronous result.
 
-`./starter exercise` runs it inside the agent's network, where the sidecar's
-local ports are. Every line it prints comes from what the sidecar returned or
-wrote to its local record of events; read it next to "How it works" in the
-README.
+The demo operator controls both local stacks and can read their evidence.
+Only Vantis's pairing credential is mounted into this originating process.
 """
-
+import base64
 import json
 import os
 import ssl
@@ -17,154 +15,151 @@ from pathlib import Path
 import httpx
 from aac_invoke_auth import sign_invoke_request
 
-SIDECAR_TLS = "https://127.0.0.1:9443"  # where work starts: the sidecar's TLS listener
-SIDECAR_API = "http://127.0.0.1:8080"  # the sidecar's local API, for its own agent
-AGENT = "http://127.0.0.1:8000"  # the agent itself
-
-PAIRING_SECRET = Path(os.environ["AAC_INVOKE_AUTH_SECRET_FILE"]).read_bytes().strip()
-CA_FILE = os.environ["AAC_STARTER_CA_FILE"]  # issued the sidecar's TLS certificate
-EVENTS = Path(os.environ["AAC_STARTER_EVIDENCE_FILE"])  # the sidecar's record, one JSON event per line
+ORDER = {"order": "PO #4143", "from": "Austin", "to": "Shanghai", "departure": "12 May"}
+START_PATH = "/v1/agent/delegations"
 
 
-def show(step: str, text: str) -> None:
-    print(f"{step:<8}  {text}")
-
-
-def start_task(task: str) -> dict:
-    """Ask the sidecar to start a task: it mints the root authority and calls your agent.
-
-    The sidecar answers with the root authority, its restrictions and your
-    agent's first decision. It carries out a `forward` after answering. The
-    person the work is done for is synthetic here; a real application passes
-    the signed-in user. The class of action names a policy in the sidecar's
-    configuration, and the payload is what the agent will see.
-    """
-    path = "/v1/agent/mint-root"
-    body = json.dumps({
-        "human_originator": {"iss": "https://synthetic.invalid", "sub": "starter-only",
-                             "auth_time_unix_seconds": int(time.time())},
-        "class_of_action": "demo_verify", "task_ref": task,
-        "payload": {"step": "forward"},
-    }).encode()
-    headers = {"Content-Type": "application/json"}
-    headers.update(sign_invoke_request(secret=PAIRING_SECRET, method="POST", path=path,
-                                       headers=headers, body=body))
-    response = httpx.post(
-        SIDECAR_TLS + path, headers=headers, content=body,
-        verify=ssl.create_default_context(cafile=CA_FILE), timeout=60,
-    )
-    response.raise_for_status()
-    return response.json()
-
-
-def follow_forward(root_token_id: str) -> dict:
-    """What the sidecar recorded while it carried out a forward, by event type.
-
-    Its `dispatch` record is written once the forwarded step has been answered,
-    so the client waits for that one.
-    """
-    events = {}
-    for _ in range(30):
-        events = {}
-        for line in EVENTS.read_text().splitlines():
-            try:
-                event = json.loads(line)
-            except ValueError:
-                continue  # a line still being written
-            if event.get("root_token_id") == root_token_id:
-                events[event["event_type"]] = event
-        if "dispatch" in events:
-            break
-        time.sleep(0.5)
-    return events
-
-
-def describe(event: dict) -> str:
-    """One recorded event in words, with the fields that show what happened."""
-    if event.get("result") != "success":
-        return f"{event.get('result')}: {event.get('failure_code')} {event.get('failure_detail', '')}".rstrip()
-    if event["event_type"] == "dispatch":
-        return (f"the sidecar handed the next step to {event.get('destination')}, "
-                f"restricted to {event.get('caveat_predicates')}")
-    if event["event_type"] == "receive":
-        return f"the sidecar verified that step as its receiver, presented by {event.get('presenter_spiffe_id')}"
-    if event["event_type"] == "respond":
-        decided = f"your agent decided {event.get('agent_decision_action')}"
-        attestation = event.get("terminal_attestation")
-        if attestation:
-            return f"{decided}; the sidecar signed the terminal attestation {attestation[:20]}..."
-        return decided
-    return json.dumps(event)
-
-
-def send_a2a_request(task: str) -> dict:
-    """Your agent sends an agent-to-agent request through its sidecar.
-
-    The agent signs the envelope with the pairing secret, as the sidecar signs
-    its calls to the agent. The sidecar mints authority for the request, sends
-    it to the destination `self_a2a` (this same agent, through the sidecar's
-    A2A route) and answers with the dispatch status.
-    """
-    envelope = {
-        "schema_version": "aac.a2a.egress.v1",
-        "dispatch_id": str(uuid.uuid4()),
-        "destination_profile": "self_a2a",
-        "task_ref": task + "-a2a",
-        "authority": {
-            "mode": "originate",
-            "class_of_action": "demo_verify",
-            "human_originator": {"iss": "https://synthetic.invalid", "sub": "starter-only",
+def start_body(scenario: str, task: str) -> dict:
+    amount = 9500 if scenario == "fresh-authority" else 8000
+    # Initial amount has one source: this simulated application approval.
+    # Class valid_for supplies +2h; the destination supplies +30m.
+    return {"human_originator": {"iss": "https://vantis.invalid/simulated", "sub": "marc-sterling",
                                  "auth_time_unix_seconds": int(time.time())},
-        },
-        "additional_predicates": {},
-        "a2a_request": {
-            "jsonrpc": "2.0",
-            "id": task,
-            "method": "SendMessage",
-            "params": {"message": {"messageId": str(uuid.uuid4()), "role": "ROLE_USER",
-                                   "parts": [{"text": "Synthetic hello"}]}},
-        },
-    }
-    path = "/v1/agent/a2a/dispatch"
-    body = json.dumps(envelope).encode()
-    headers = {"Content-Type": "application/json", "X-AAC-Envelope-Schema": "aac.a2a.egress.v1"}
-    headers.update(sign_invoke_request(secret=PAIRING_SECRET, method="POST", path=path, headers=headers, body=body))
-    response = httpx.post(SIDECAR_API + path, headers=headers, content=body, timeout=60)
+            "class_of_action": "reserve_travel", "task_ref": task,
+            "obligations": [{"predicate": "amount_max", "value": "10000"},
+                            {"predicate": "originator_reference", "value": ORDER["order"]},
+                            {"predicate": "task_ref", "value": task}],
+            "payload": {**ORDER, "offer": amount, "scenario": scenario}}
+
+
+def start_task(scenario: str, task: str) -> dict:
+    body = json.dumps(start_body(scenario, task)).encode()
+    headers = {"Content-Type": "application/json"}
+    headers.update(sign_invoke_request(secret=Path(os.environ["AAC_INVOKE_AUTH_SECRET_FILE"]).read_bytes().strip(),
+                                       method="POST", path=START_PATH, headers=headers, body=body))
+    response = httpx.post("https://127.0.0.1:9443" + START_PATH, headers=headers, content=body,
+                          verify=ssl.create_default_context(cafile="/run/secrets/ca.crt"), timeout=60)
     response.raise_for_status()
     return response.json()
 
 
-def exercise() -> None:
-    task = "starter-" + uuid.uuid4().hex[:8]
-    started = start_task(task)
-    show("mint", f"the sidecar minted root authority {started['root_token_id'][:12]}... for task {task}, "
-                 f"restricted to {json.dumps(started['applied_predicates'], ensure_ascii=False)}")
-    show("agent", f"the sidecar called your agent ({started['delivery_status']}); "
-                  f"its answer: {json.dumps(started['agent_response'], ensure_ascii=False)}")
-    if started["delivery_status"] == "delivered" and started["agent_response"].get("action") == "forward":
-        events = follow_forward(started["root_token_id"])
-        for event_type in ("dispatch", "receive", "respond"):  # the order in which they happen
-            if event_type in events:
-                show(event_type, describe(events[event_type]))
-        if "dispatch" not in events:
-            show("dispatch", "no record of the forwarded step after 15 s; see: docker logs aac-starter-sidecar-1")
-    show("a2a", f"your agent's request went through the sidecar to self_a2a: {send_a2a_request(task)['status']}")
-    refused = httpx.post(AGENT + "/invoke", json={})
-    show("refused", f"a call to your agent without the pairing signature: HTTP {refused.status_code}")
+def records(path: Path) -> list[dict]:
+    if not path.exists():
+        return []
+    lines = path.read_text().splitlines()
+    result = []
+    for index, line in enumerate(lines):
+        try:
+            result.append(json.loads(line))
+        except json.JSONDecodeError:
+            if index != len(lines) - 1:
+                raise
+            # The last line may still be in flight; the next poll reads it again.
+    return result
+
+
+def matching(directory: Path, filename: str, root: str, task: str) -> list[dict]:
+    return [row for row in records(directory / filename)
+            if row.get("root_token_id") == root and row.get("task_ref") == task]
+
+
+def verify_result(started: dict, dispatch: dict, received: dict, respond: dict,
+                  action: dict, expected_signer: str) -> dict:
+    """Require the sender's cryptographic verdict, then inspect business claims.
+
+    Decoding below is not signature verification. The sender verified the ACK;
+    the receiver's local receipt and records expose the correlated contents.
+    """
+    assert dispatch["result"] == "success", dispatch
+    assert dispatch["terminal_attestation_verification"] == "verified", dispatch
+    root, task = started["root_token_id"], started["task_ref"]
+    for row in (dispatch, received, respond, action):
+        assert row["root_token_id"] == root and row["task_ref"] == task, row
+        assert row["token_id"] == dispatch["token_id"], row
+    assert dispatch["caveat_audience"] == expected_signer
+    assert received["actor_spiffe_id"] == expected_signer
+    assert respond["result"] == "success" and respond["agent_decision_action"] == "settle"
+    part = respond["terminal_attestation"].split(".")[1]
+    claims = json.loads(base64.urlsafe_b64decode(part + "=" * (-len(part) % 4)))
+    assert claims["terminal_agent_svid"] == expected_signer
+    assert claims["root_token_id"] == root and claims["task_ref"] == task
+    decision = action["decision"]
+    assert claims["settlement_id"] == decision["settlement_id"]
+    assert claims["action_summary"] == decision["action_summary"]
+    result = json.loads(claims["action_summary"])
+    assert all(result[key] == value for key, value in ORDER.items())
+    assert result["reservation_id"] == claims["settlement_id"] == "synthetic-" + task
+    assert result["payment_status"] == "unpaid" and result["synthetic"] is True
+    assert result["currency"] == "USD" and result["amount"] == action["payload"]["offer"]
+    limits = dict(part.split(":", 1) for part in dispatch["caveat_predicates"].split(","))
+    assert int(limits["amount_max"]) == result["amount"]
+    assert limits["originator_reference"] == ORDER["order"] and limits["task_ref"] == task
+    assert int(limits["valid_until"]) <= started["expires_at_unix_seconds"]
+    assert 0 < int(limits["valid_until"]) - time.time() <= 1800
+    return result
+
+
+def run(scenario: str = "reservation") -> dict:
+    task = "po4143-" + uuid.uuid4().hex[:12]
+    began = time.time()
+    started = start_task(scenario, task)
+    assert started["delivery_status"] == "delivered", started
+    assert started["agent_response"]["action"] == "forward", started
+    assert int(started["applied_predicates"]["amount_max"]) == 10000, started
+    assert started["applied_predicates"]["originator_reference"] == ORDER["order"]
+    assert began + 7199 <= started["expires_at_unix_seconds"] <= time.time() + 7200
+    root = started["root_token_id"]
+    print(json.dumps({"simulated_approval": "Marc Sterling: PO #4143, up to $10,000",
+                      "mint": started}), flush=True)
+    sender, receiver = Path("/evidence/vantis"), Path("/evidence/tourfedia")
+    deadline = time.monotonic() + 30
+    while time.monotonic() < deadline:
+        sent = matching(sender, "telemetry.jsonl", root, task)
+        got = matching(receiver, "telemetry.jsonl", root, task)
+        actions = matching(receiver, "actions.jsonl", root, task)
+        dispatch = next((e for e in sent if e["event_type"] == "dispatch"), None)
+        receive = next((e for e in got if e["event_type"] == "receive" and e["result"] == "success"), None)
+        respond = next((e for e in got if e["event_type"] == "respond"), None)
+        if scenario == "fare-change" and dispatch and actions:
+            assert actions[0]["decision"] == {"action": "refuse", "reason": "Fare changed to $9,500; no reservation was created."}
+            assert not respond
+            result = {"application_decline": actions[0], "dispatch": dispatch}
+            print(json.dumps(result), flush=True)
+            return result
+        if scenario == "local-widening":
+            failure = next((e for e in got if e["event_type"] == "dispatch"), None)
+            if failure:
+                assert failure["result"] == "failure" and failure["failure_code"] == "ERR_CHAIN_INVALID", failure
+                assert "candidate delegation refused" in failure["failure_detail"], failure
+                assert not any(e["event_type"] == "receive" for e in sent)
+                assert len(matching(sender, "actions.jsonl", root, task)) == 1
+                assert actions[0]["decision"]["destination"] == "test_vantis"
+                print(json.dumps({"local_refusal": failure}), flush=True)
+                return failure
+        elif dispatch and receive and respond and actions:
+            result = verify_result(started, dispatch, receive, respond, actions[0], os.environ["AAC_DEMO_BOOKING_ID"])
+            receipt = {"root_token_id": root, "task_ref": task, "reservation": result,
+                       "terminal_attestation_verification": dispatch["terminal_attestation_verification"],
+                       "dispatch": dispatch, "receive": receive, "respond": respond}
+            print(json.dumps(receipt), flush=True)
+            return receipt
+        time.sleep(0.25)
+    raise RuntimeError(f"No correlated completion after 30 seconds for {root}")
 
 
 def wait_until_ready() -> None:
-    """For ./starter up: the sidecar answers /readyz once it has loaded its identity and configuration."""
     for _ in range(90):
         try:
-            if httpx.get(SIDECAR_API + "/readyz").status_code == 200:
-                print("The sidecar is ready.")
+            if httpx.get("http://127.0.0.1:8080/readyz").status_code == 200:
                 return
         except httpx.HTTPError:
-            pass  # not listening yet
+            pass
         time.sleep(1)
-    sys.exit("The sidecar is not ready after 90 s; see: docker logs aac-starter-sidecar-1")
+    raise RuntimeError("Sidecar not ready after 90 seconds; inspect ./demo compose <agent> logs sidecar")
 
 
 if __name__ == "__main__":
-    {"exercise": exercise, "wait": wait_until_ready}[sys.argv[1]]()
+    if sys.argv[1] == "wait":
+        wait_until_ready()
+    else:
+        run(sys.argv[1])
