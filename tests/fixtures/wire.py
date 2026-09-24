@@ -3,6 +3,8 @@
 This deliberately bypasses the sender guard. It is not an SDK or business-agent
 dependency. Positive controls travel through the same receiver as each attack.
 Only the CLI's Ed25519 development identity profile is needed by this fixture.
+Wire profile: AAC v1 macaroon and DPoP encoding as accepted by sidecar v0.4.1.
+Keep this fixture aligned with the tested release; positive controls must pass.
 """
 import base64
 import hashlib

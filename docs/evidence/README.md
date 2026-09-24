@@ -27,6 +27,11 @@ authorized test tenant material. Anonymous registry reads confirmed both public
 image manifests. This is prepublication consumer evidence: the renamed public
 clone, final public documentation and release closeout remain pending.
 
+The external-review response adds documentation and a wire-profile docstring
+after this measurement. The JSON source hashes remain the original measured
+bytes at `0e45df5820a74d65eae864a41726b11b09981eae`; the fixture's executable
+logic is unchanged. Do not replace historical hashes with later source hashes.
+
 ## Historical one-agent measurements
 
 Real runs of this starter against the AAC stage service. Nothing in these

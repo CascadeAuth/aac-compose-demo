@@ -55,6 +55,9 @@ follows.
    what the CLI writes, the agent refuses unsigned calls, the client runs the
    flow, and an opt-in live test measures the documented steps on a real
    tenant.
+   The explicit test-only adversarial driver also constructs wire-format
+   fixtures to bypass the sender guard and demonstrate receiver enforcement;
+   maintain its encoding and positive controls against the tested sidecar release.
 
 ## Before adding something
 

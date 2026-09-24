@@ -103,6 +103,10 @@ test "$VANTIS_TENANT" != "$TOURFEDIA_TENANT"
 
 Append these sections **once** to the input copies. The peer's public CA
 path is an explicit trust choice; no private key is exchanged.
+`ca.crt` is the peer's public CA certificate, the same anchor it publishes
+through AAC. In a real deployment the peer supplies that public certificate;
+reading it from the other agent's local directory is a convenience of running
+both tenants on one machine, not a requirement to access a peer's private files.
 
 ```sh
 cat >> .local/trip-planner.yaml <<EOF
@@ -179,6 +183,9 @@ Central telemetry remains off here; enriched graph integration is separate.
 This explicit test driver uses CLI-issued test material and the public
 `cryptography==50.0.1` package. Its isolated container mounts the two test
 identities; the normal applications never receive those private keys.
+The driver constructs the attack chains itself using a test-only copy of the
+AAC v1 wire encoding accepted by sidecar v0.4.1. Keep it aligned with the tested
+sidecar release; its positive controls must pass before an attack result counts.
 
 It checks both chain-start aliases: absent, wrong-pair and altered signatures
 must fail before any successful mint or application invocation. It constructs
