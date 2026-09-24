@@ -5,3 +5,4 @@ aac-cli==0.2.2
 aac-invoke-auth[fastapi]==0.1.2
 httpx==0.28.1
 PyYAML==6.0.3
+markdown-it-py==4.0.0

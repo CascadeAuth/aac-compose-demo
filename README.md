@@ -1,7 +1,7 @@
-# AAC: two tenants, one unpaid reservation
+# AAC: two tenants, one reservation made
 
 Vantis Equity's trip-planner asks Tourfedia's booking workload to create a
-**synthetic unpaid reservation**. Each fictional organization has its own AAC
+**reservation**. Each fictional organization has its own AAC
 tenant, assigned trust domain, CA, public trust publication and private keys.
 
 Marc Sterling's approval is **simulated**: PO #4143, Austin to Shanghai,
@@ -12,7 +12,8 @@ $8,000 and 30 minutes, addressed to Tourfedia. Tourfedia returns a signed
 terminal receipt; Vantis verifies it against the expected identity and actual
 chain root.
 
-This creates no real supplier booking, payment or paid ticket. Thirty minutes
+The example application creates a reservation result; supplier integration and
+payment are omitted for clarity. Thirty minutes
 limits the **authority**, not a guaranteed price hold. Returning a receipt is
 not another delegation or another business agent.
 
@@ -23,17 +24,24 @@ tenants you control. Registration requires interactive GitHub sign-in.
 The two tenants can have the same human owner. A contact email is registration
 metadata; it does not select your GitHub account.
 
-| Public component | Version used here |
+| Public component | How it is supplied |
 |---|---|
-| aac-cli on PyPI | 0.2.2 |
-| AAC sidecar on Docker Hub | v0.4.1 |
-| Trust-anchor publisher on GHCR | 0.2.3 |
-| aac-invoke-auth on PyPI | 0.1.2 |
-| Python application image | 3.12-slim |
-| uvicorn / httpx | 0.52.4 / 0.28.1 |
+| [aac-cli on PyPI](https://pypi.org/project/aac-cli/) | Install in your host Python environment |
+| [AAC sidecar on Docker Hub](https://hub.docker.com/r/cascadeauth/aac-sidecar/) | Compose pulls the selected immutable image |
+| [Trust-anchor publisher on GHCR](https://github.com/orgs/CascadeAuth/packages/container/package/aac-trust-anchor-publisher) | Compose pulls the selected image |
+| [aac-invoke-auth on PyPI](https://pypi.org/project/aac-invoke-auth/) | Installed inside the application image |
+| [Python application image](https://hub.docker.com/_/python) | Application base image; host Python is also required for the CLI |
+| [uvicorn](https://pypi.org/project/uvicorn/) / [httpx](https://pypi.org/project/httpx/) | Installed inside the application image |
+
+Current AAC installation metadata is published in the
+[released-component record](https://cascadeauth.github.io/aac-starter-guide/released-components.json).
+The exact combination exercised by this demo remains in Compose, the Dockerfile,
+test dependencies and [test receipts](docs/evidence/README.md). Component updates
+must pass the demo's compatibility checks; changing a guide does not change a
+recorded run or silently select a different container.
 
 No private repository or AAC SDK is required. The applications build locally
-from this public source. See the [AAC guide](https://cascadeauth.github.io/aac-sidecar-go/)
+from this public source. See the [AAC guide](https://cascadeauth.github.io/aac-starter-guide/)
 for protocol/configuration reference and production deployment choices.
 
 ## 1. Install and declare each agent
@@ -163,7 +171,7 @@ receive events, signed terminal receipt, reservation/order and
 acknowledgement alone does not pass. Read the output alongside
 [agent/client.py](agent/client.py) and [agent/agent.py](agent/agent.py).
 
-The normal run reports an unpaid synthetic $8,000 reservation. In the separate
+The normal run reports an $8,000 reservation. In the separate
 fare-change run Tourfedia sees $9,500 and declines before reserving; this is a
 business decision. The fresh-authority run starts a new Vantis authorization
 under the simulated $10,000 approval and reserves at $9,500. It does not widen
