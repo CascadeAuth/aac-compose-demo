@@ -1,5 +1,21 @@
 # Measured runs
 
+## Supplied-material repeat-run correction — 2026-09-24 UTC
+
+The renamed public main clone passed 22 offline tests and three live tests,
+but repeating the supplied-material test found a harness error: it passed
+first-time material-import flags to `aac init` for an existing `book-supplied`
+slot. CLI 0.2.2 correctly refused to replace that material.
+
+[reservation-repeat-20260924.json](reservation-repeat-20260924.json) records the
+test-only fix at `4ff7c622d0f0e4083bd26aca0412ae6d736eda77`: renew an existing
+slot, then apply its configuration, and restore the normal booking slot even
+when setup fails. All 25 offline tests pass, including fresh/repeated setup and
+controlled setup-failure restoration. Two consecutive live supplied-material
+runs against the same existing slot passed in 48.96 and 51.23 seconds, each
+including three verified reservations and three cross-tenant refusal campaigns.
+The application, sidecar and original historical receipts are unchanged.
+
 ## Two-tenant reservation acceptance — 2026-09-24 UTC
 
 [reservation-20260924.json](reservation-20260924.json) records implementation

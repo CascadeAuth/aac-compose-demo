@@ -1,0 +1,140 @@
+{
+  "schema": "aac-compose-demo.repeatable-supplied-acceptance.v1",
+  "date_utc": "2026-09-24",
+  "implementation_commit": "4ff7c622d0f0e4083bd26aca0412ae6d736eda77",
+  "published_baseline_commit": "8f2ca73076afb96ec8f9ef8d614a4f88bbab409b",
+  "original_failure": "The fourth live test repeated first-time supplied material flags to aac init for an existing book-supplied slot; CLI correctly refused replacement. Three other public-clone live tests passed.",
+  "fix": "Use renew with profile check for an initialized slot, apply configuration without material flags, and restore normal booking in finally across setup failures.",
+  "offline_tests": 25,
+  "versions": {
+    "aac-cli": "0.2.2",
+    "sidecar": "v0.4.1",
+    "aac-invoke-auth": "0.1.2"
+  },
+  "runs": [
+    {
+      "run": "first",
+      "seconds": 48.96,
+      "successful_commands": 24,
+      "successful_cross_tenant_refusal_campaigns": 3,
+      "reservations": [
+        {
+          "root_token_id": "7b66eb773537c1391e323805f08e03dc505273312e73cc9be7231242ae255e56",
+          "task_ref": "po4143-e3e7cc40e26e",
+          "reservation": {
+            "amount": 8000,
+            "currency": "USD",
+            "departure": "12 May",
+            "from": "Austin",
+            "order": "PO #4143",
+            "payment_status": "unpaid",
+            "reservation_id": "synthetic-po4143-e3e7cc40e26e",
+            "synthetic": true,
+            "to": "Shanghai"
+          },
+          "terminal_attestation_verification": "verified"
+        },
+        {
+          "root_token_id": "df7309c95782a5d0f16d1a59ed5c0b0368e6e37e02f71262e52a231e440207cb",
+          "task_ref": "po4143-1e80b1367a4f",
+          "reservation": {
+            "amount": 8000,
+            "currency": "USD",
+            "departure": "12 May",
+            "from": "Austin",
+            "order": "PO #4143",
+            "payment_status": "unpaid",
+            "reservation_id": "synthetic-po4143-1e80b1367a4f",
+            "synthetic": true,
+            "to": "Shanghai"
+          },
+          "terminal_attestation_verification": "verified"
+        },
+        {
+          "root_token_id": "78e18b280cfe91b6b100f08d68fe8fc7fd9e133cfcbd4671383e10f0b260e9c6",
+          "task_ref": "po4143-cda9bfb9dc7c",
+          "reservation": {
+            "amount": 8000,
+            "currency": "USD",
+            "departure": "12 May",
+            "from": "Austin",
+            "order": "PO #4143",
+            "payment_status": "unpaid",
+            "reservation_id": "synthetic-po4143-cda9bfb9dc7c",
+            "synthetic": true,
+            "to": "Shanghai"
+          },
+          "terminal_attestation_verification": "verified"
+        }
+      ],
+      "existing_supplied_slot_reused": true
+    },
+    {
+      "run": "second",
+      "seconds": 51.23,
+      "successful_commands": 24,
+      "successful_cross_tenant_refusal_campaigns": 3,
+      "reservations": [
+        {
+          "root_token_id": "1c51ccb369e5964e78b294e680cfd39f3687d04800296e7979cf70fb97fd86c9",
+          "task_ref": "po4143-3fce78f9ccba",
+          "reservation": {
+            "amount": 8000,
+            "currency": "USD",
+            "departure": "12 May",
+            "from": "Austin",
+            "order": "PO #4143",
+            "payment_status": "unpaid",
+            "reservation_id": "synthetic-po4143-3fce78f9ccba",
+            "synthetic": true,
+            "to": "Shanghai"
+          },
+          "terminal_attestation_verification": "verified"
+        },
+        {
+          "root_token_id": "1b654ba59b311bb1e9098a9c9b5341a27f82af51f5f2a602c26e03a4ea760926",
+          "task_ref": "po4143-7c135194ce05",
+          "reservation": {
+            "amount": 8000,
+            "currency": "USD",
+            "departure": "12 May",
+            "from": "Austin",
+            "order": "PO #4143",
+            "payment_status": "unpaid",
+            "reservation_id": "synthetic-po4143-7c135194ce05",
+            "synthetic": true,
+            "to": "Shanghai"
+          },
+          "terminal_attestation_verification": "verified"
+        },
+        {
+          "root_token_id": "af18fbb2d24d31bef670a3d5f07dade87fbf2afc53fe5a170a33abe639e9fd01",
+          "task_ref": "po4143-d921bfd4f2c6",
+          "reservation": {
+            "amount": 8000,
+            "currency": "USD",
+            "departure": "12 May",
+            "from": "Austin",
+            "order": "PO #4143",
+            "payment_status": "unpaid",
+            "reservation_id": "synthetic-po4143-d921bfd4f2c6",
+            "synthetic": true,
+            "to": "Shanghai"
+          },
+          "terminal_attestation_verification": "verified"
+        }
+      ],
+      "existing_supplied_slot_reused": true
+    }
+  ],
+  "source_hashes": {
+    "tests/live/test_supplied_material.py": "1c41ea0da325cb1136baf9178e7d57d316171e9ab34fa9a982b462180595ecac",
+    "tests/test_supplied_lifecycle.py": "3abc41f2c34fcc7fd19496247ca4e8ee992d422f75602ccad79361cb56964bde"
+  },
+  "limits": [
+    "Test-only change; applications and sidecar runtime unchanged.",
+    "Same two authorized stage tenants and workload identities; no extra tenant.",
+    "CLI-issued test issuer, not production CA qualification.",
+    "Publication of this fix and v0.4.2 are separate remaining gates."
+  ]
+}
