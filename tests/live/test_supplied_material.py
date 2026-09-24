@@ -34,15 +34,21 @@ def test_supplied_certificate_replacement(monkeypatch):
     supplied_file.write_text(yaml.safe_dump(supplied))
     original = json.loads(run("aac", "agent", "status", "--agent", "booking", "--output", "json"))
     run("./demo", "compose", "booking", "stop", "sidecar", "agent")
-    run("aac", "init", "--profile", "tourfedia", "--agent", "book-supplied",
-        "--agent-config", str(supplied_file), "--layout", "container",
-        "--trust-url", "https://trust.stage.cascadeauth.dev", "--idp", "github", *material_flags())
-    status = json.loads(run("aac", "agent", "status", "--agent", "book-supplied", "--output", "json"))
-    assert status["workload_spiffe_id"] == original["workload_spiffe_id"]
-    assert not (HOME / "agents/book-supplied/keep").exists()
-    before = yaml.safe_load((HOME / "agents/book-supplied/sidecar-config.yaml").read_text())
-    monkeypatch.setenv("AAC_TEST_BOOKING_AGENT", "book-supplied")
     try:
+        setup = ["aac", "init", "--profile", "tourfedia", "--agent", "book-supplied",
+                 "--agent-config", str(supplied_file), "--layout", "container",
+                 "--trust-url", "https://trust.stage.cascadeauth.dev", "--idp", "github"]
+        if (HOME / "agents/book-supplied/compose.env").exists():
+            # Existing supplied material is replaced by renew, never by init.
+            run("aac", "agent", "renew", "--agent", "book-supplied", "--profile", "tourfedia", *material_flags())
+            run(*setup)
+        else:
+            run(*setup, *material_flags())
+        status = json.loads(run("aac", "agent", "status", "--agent", "book-supplied", "--output", "json"))
+        assert status["workload_spiffe_id"] == original["workload_spiffe_id"]
+        assert not (HOME / "agents/book-supplied/keep").exists()
+        before = yaml.safe_load((HOME / "agents/book-supplied/sidecar-config.yaml").read_text())
+        monkeypatch.setenv("AAC_TEST_BOOKING_AGENT", "book-supplied")
         run("./demo", "up")
         run("./demo", "run")
         run("./demo", "check")
@@ -62,5 +68,5 @@ def test_supplied_certificate_replacement(monkeypatch):
             run("./demo", "check")
     finally:
         run("./demo", "compose", "booking", "stop", "sidecar", "agent")
-        monkeypatch.delenv("AAC_TEST_BOOKING_AGENT")
+        monkeypatch.delenv("AAC_TEST_BOOKING_AGENT", raising=False)
         run("./demo", "up")
