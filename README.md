@@ -1,334 +1,323 @@
-# AAC Compose starter
+# AAC: two tenants, one unpaid reservation
 
-Run an Agent Authority Cloud (AAC) workload on your own machine and watch the
-pieces of AAC work together. One command registers your developer tenant and
-creates everything a workload needs; Docker Compose starts your agent beside
-an AAC sidecar; one task then shows, step by step, what the sidecar and your
-agent did with it.
+Vantis Equity's trip-planner asks Tourfedia's booking workload to create a
+**synthetic unpaid reservation**. Each fictional organization has its own AAC
+tenant, assigned trust domain, CA, public trust publication and private keys.
 
-This is a teaching example: small, readable, and deliberately free of
-production concerns (see "What this example leaves out" below).
+Marc Sterling's approval is **simulated**: PO #4143, Austin to Shanghai,
+departing 12 May, up to $10,000. Vantis's application signs the native chain-start
+request and supplies that budget. T0 establishes origin; T1 carries $10,000,
+the order reference and two hours of authority. The trip-planner narrows to
+$8,000 and 30 minutes, addressed to Tourfedia. Tourfedia returns a signed
+terminal receipt; Vantis verifies it against the expected identity and actual
+chain root.
 
-## How the pieces fit
+This creates no real supplier booking, payment or paid ticket. Thirty minutes
+limits the **authority**, not a guaranteed price hold. Returning a receipt is
+not another delegation or another business agent.
 
-```text
- your machine (Docker)                                 AAC stage (hosted)
-┌───────────────────────────────────────────────┐
-│ client ──start a task──▶ sidecar ◀────────────┼──── api.stage.cascadeauth.dev
-│                           │  ▲                │     your tenant and your
-│               signed call │  │ decision       │     workload's registration
-│                           ▼  │                │
-│                          agent                │
-│                                               │
-│ publisher ──your public keys──────────────────┼───▶ trust.stage.cascadeauth.dev
-└───────────────────────────────────────────────┘     where sidecars check what
-                                                       yours signed
-```
+## Requirements
 
-* **`aac`**, the AAC command-line tool, registers your tenant and creates the
-  keys, certificates and sidecar configuration. Nothing in this repository
-  creates or edits them.
-* **The sidecar** (`docker.io/cascadeauth/aac-sidecar`) runs beside your
-  agent and does the AAC work: it mints and checks authority, calls your
-  agent, carries out its decisions and signs the results.
-* **Your agent** (`agent/agent.py`) only decides: forward the work, settle
-  it, or refuse it.
-* **The publisher** (`ghcr.io/cascadeauth/aac-trust-anchor-publisher`)
-  uploads your public keys to AAC, so that sidecars can check what yours
-  signs.
-* **The client** (`agent/client.py`) starts one task and prints what
-  happened.
+macOS or Linux, Python 3.11+, Docker with Compose, and two stage developer
+tenants you control. Registration requires interactive GitHub sign-in.
+The two tenants can have the same human owner. A contact email is registration
+metadata; it does not select your GitHub account.
 
-## What you need
-
-Choose where to run the commands:
-
-| Your computer | Where to run the starter |
+| Public component | Version used here |
 |---|---|
-| Windows | Inside an Ubuntu 24.04 or newer virtual machine. Native Windows is not supported. |
-| macOS | Inside an Ubuntu VM, or directly on macOS. |
-| Linux | Directly on Linux. |
+| aac-cli on PyPI | 0.2.2 |
+| AAC sidecar on Docker Hub | v0.4.1 |
+| Trust-anchor publisher on GHCR | 0.2.3 |
+| aac-invoke-auth on PyPI | 0.1.2 |
+| Python application image | 3.12-slim |
+| uvicorn / httpx | 0.52.4 / 0.28.1 |
 
-For a VM, we recommend [Multipass](https://canonical.com/multipass), the setup
-used for the Ubuntu VM test runs. WSL2 with Ubuntu is another option
-on Windows, but has not been tested with this starter. Install Python, Git
-and Docker Engine inside the VM, and run all the steps there.
+No private repository or AAC SDK is required. The applications build locally
+from this public source. See the [AAC guide](https://cascadeauth.github.io/aac-sidecar-go/)
+for protocol/configuration reference and production deployment choices.
 
-* Docker with Compose v2: Docker Desktop on macOS, or Docker Engine on Linux.
-  Run everything as your normal user; `docker ps` must work without `sudo`.
-  On Linux, follow Docker's [post-installation steps](https://docs.docker.com/engine/install/linux-postinstall/)
-  to give your user Docker access.
-* Python 3.10 or newer, for the `aac` command-line tool.
-* A GitHub or Google account. Registering signs you in, and that account
-  becomes your tenant's administrator.
+## 1. Install and declare each agent
 
-## Run it
-
-### 1. Install the CLI and get the code
-
-```bash
-python3 -m venv ~/.aac-tools
-. ~/.aac-tools/bin/activate
-pip install 'aac-cli==0.2.0'
-git clone https://github.com/CascadeAuth/aac-compose-starter.git
-cd aac-compose-starter
+```sh
+git clone https://github.com/CascadeAuth/aac-compose-demo.git
+cd aac-compose-demo
+python3 -m venv .venv
+. .venv/bin/activate
+python -m pip install 'aac-cli==0.2.2'
+mkdir -p .local
+export AAC_CLI_HOME="$PWD/.local/aac"
+cp config/trip-planner.yaml .local/trip-planner.yaml
+cp config/booking.yaml .local/booking.yaml
 ```
 
-### 2. Set up your tenant
+Keep this environment variable in each terminal used for the demo. It gives
+the demo its own CLI home and leaves your other profiles alone.
 
-```bash
-./starter setup --display-name "Your team" --contact you@example.com --idp github
+These are **operator-authored inputs**, supplied explicitly with
+`--agent-config`. The CLI alone generates keys, certificates, publisher
+configuration, `compose.env` and `sidecar-config.yaml`. Never hand-edit those
+generated outputs or consume the private `record.json` schema.
+
+The inputs select Basic in-memory replay protection with `dev_mode: false`.
+Development-issued certificates do not require development exceptions.
+Each pair shares its own loopback interface; the sidecars communicate over a
+private Docker network using HTTPS names `trip-planner` and `booking`.
+No host ports are published.
+
+## 2. Register two tenants
+
+Set your real contact addresses:
+
+```sh
+export VANTIS_CONTACT='you+vantis@example.com'
+export TOURFEDIA_CONTACT='you+tourfedia@example.com'
+aac init --profile vantis --agent trip-planner --agent-config .local/trip-planner.yaml --layout container --admin-url https://api.stage.cascadeauth.dev --data-plane-url https://api.stage.cascadeauth.dev --trust-url https://trust.stage.cascadeauth.dev --idp github --display-name 'Vantis Equity Demo' --contact "$VANTIS_CONTACT"
+aac init --profile tourfedia --agent booking --agent-config .local/booking.yaml --layout container --admin-url https://api.stage.cascadeauth.dev --data-plane-url https://api.stage.cascadeauth.dev --trust-url https://trust.stage.cascadeauth.dev --idp github --display-name 'Tourfedia Demo' --contact "$TOURFEDIA_CONTACT"
 ```
 
-`./starter setup` runs `aac init` against the AAC stage service. It asks once
-before creating your tenant, because a tenant is permanent, and opens your
-browser twice to sign in. Then it:
+Run interactively and acknowledge each permanent tenant registration. There
+are two sign-ins per tenant: registration and administration. Use the same
+GitHub account for both sign-ins of that tenant. A rerun reuses its registration;
+it does not create another tenant. Noninteractive registration additionally
+requires the explicit `--create-tenant` acknowledgement.
 
-1. registers your developer tenant;
-2. takes the trust domain AAC assigns to it,
-   `<tenant-id>.tenants.stage.cascadeauth.dev`;
-3. registers the sample workload `spiffe://<trust-domain>/demo/agent`;
-4. creates the development keys and certificates and writes the sidecar
-   configuration, all under `~/.aac/`;
+The assigned domains come from AAC; owning `tourfedia.com` is not a trust-domain
+binding. Empty peer configuration is intentional during initial registration.
 
-and finally downloads the sidecar and publisher images. Once setup is complete,
-`./starter setup` needs no options: it refreshes the generated settings while
-keeping your tenant and keys.
+## 3. Explicitly trust and address the peer
 
-One CLI profile names your tenant; one agent folder holds this workload's
-files, by default `~/.aac/agents/starter/`:
+Read the registered facts through supported CLI status output:
 
-| Generated path | Used by |
-|---|---|
-| `sidecar/` | The sidecar, mounted at `/etc/aac/pki`. |
-| `agent/` | The agent and client, mounted at `/run/secrets`: `pairing.secret` and `ca.crt`. The sidecar also reads the pairing secret. |
-| `keep/` | You only: the development CA private key. Never mounted in a container; absent when you supply certificates. |
-| `archive/` | Files replaced by `aac agent renew --agent starter`; never mounted. |
-| `state/` | The sidecar's runtime records; the client reads `telemetry.jsonl`. |
-| `sidecar-config.yaml`, `compose.env`, `record.json` | The CLI's generated settings and setup record. |
-
-The publisher reads your tenant's public material and admin signing key under
-`~/.aac/tenants/<tenant-id>/`. The sidecar also reads the tenant API key from
-`~/.aac/credentials/<tenant-id>`. The CLI writes every file; the starter only
-mounts them.
-
-### 3. Start
-
-```bash
-./starter up
+```sh
+aac agent status --agent trip-planner --output json > .local/vantis-status.json
+aac agent status --agent booking --output json > .local/tourfedia-status.json
+value() { python -c 'import json,sys; print(json.load(open(sys.argv[1]))[sys.argv[2]])' "$1" "$2"; }
+VANTIS_TENANT=$(value .local/vantis-status.json tenant_id)
+VANTIS_DOMAIN=$(value .local/vantis-status.json hosted_trust_domain)
+VANTIS_ID=$(value .local/vantis-status.json workload_spiffe_id)
+TOURFEDIA_TENANT=$(value .local/tourfedia-status.json tenant_id)
+TOURFEDIA_DOMAIN=$(value .local/tourfedia-status.json hosted_trust_domain)
+TOURFEDIA_ID=$(value .local/tourfedia-status.json workload_spiffe_id)
+test "$VANTIS_TENANT" != "$TOURFEDIA_TENANT"
 ```
 
-This builds the agent image and starts the agent, the sidecar and the
-publisher, then waits for two things, saying before each which it is waiting
-for:
+Append these sections **once** to the input copies. The peer's public CA
+path is an explicit trust choice; no private key is exchanged.
+`ca.crt` is the peer's public CA certificate, the same anchor it publishes
+through AAC. In a real deployment the peer supplies that public certificate;
+reading it from the other agent's local directory is a convenience of running
+both tenants on one machine, not a requirement to access a peer's private files.
 
-1. **The sidecar is ready**: it has loaded its identity, keys and
-   configuration. It gives up after 90 seconds.
-2. **AAC serves your public keys.** The publisher signs your public root key
-   and CA certificate with your tenant-admin key and uploads them
-   to AAC, which serves them at `https://trust.stage.cascadeauth.dev`. Every
-   sidecar that checks what yours signs, yours included, reads them there.
-   `./starter up` has the CLI read them back from that address, and gives up
-   after five minutes. After the first start they are already there, so this
-   takes a moment.
-
-### 4. Run a task
-
-```bash
-./starter exercise
+```sh
+cat >> .local/trip-planner.yaml <<EOF
+trust_anchors:
+  tenant_ids: [$TOURFEDIA_TENANT]
+spiffe_bundles:
+  trust_domains: [$TOURFEDIA_DOMAIN]
+https_trust:
+  ca_files: ["$AAC_CLI_HOME/agents/booking/agent/ca.crt"]
+destinations:
+  tourfedia:
+    url: https://booking:9443/v1/agent/receive
+    audience_pattern: $TOURFEDIA_ID
+    valid_for: +30m
+    timeout_ms: 10000
+EOF
+cat >> .local/booking.yaml <<EOF
+trust_anchors:
+  tenant_ids: [$VANTIS_TENANT]
+spiffe_bundles:
+  trust_domains: [$VANTIS_DOMAIN]
+https_trust:
+  ca_files: ["$AAC_CLI_HOME/agents/trip-planner/agent/ca.crt"]
+EOF
+aac init --profile vantis --agent trip-planner --agent-config .local/trip-planner.yaml
+aac init --profile tourfedia --agent booking --agent-config .local/booking.yaml
 ```
 
-You should see something like:
+These three trust settings have different jobs: verify tenant root signatures,
+verify workload certificates, and verify outbound HTTPS connections.
+The destination names the exact registered booking identity. The initial
+class supplies `valid_for: +2h`; the destination supplies `+30m`.
+Dynamic amounts come only from the application. Released native chain starts
+refuse conflicting class/request values and any request-supplied
+`valid_until`.
 
-```text
-mint      the sidecar minted root authority 35c9e381335c... for task starter-425868e6, restricted to {"action": "dev_noop", "valid_until": 1789428108}
-agent     the sidecar called your agent (delivered); its answer: {"action": "forward", "additional_predicates": {"task_ref": "starter-425868e6"}, "destination": "self_receive", "payload": {"step": "settle"}}
-dispatch  the sidecar handed the next step to self_receive, restricted to action:dev_noop,task_ref:starter-425868e6,valid_until:1789427808
-receive   the sidecar verified that step as its receiver, presented by spiffe://tnt-97d0232e-….tenants.stage.cascadeauth.dev/demo/agent
-respond   your agent decided settle; the sidecar signed the terminal attestation eyJhbGciOiJFZERTQSIs...
-a2a       your agent's request went through the sidecar to self_a2a: dispatched
-refused   a call to your agent without the pairing signature: HTTP 401
+## 4. Start and run
+
+```sh
+./demo up
+./demo run
+./demo run fare-change
+./demo run fresh-authority
 ```
 
-## How it works
+`up` builds the small application image, starts the two pairs and their
+publishers, and waits for readiness and public trust publication.
+`run` starts one task, then waits up to 30 seconds for correlated completion.
+Failure or missing evidence exits nonzero.
 
-Each line is one hand-off. The first two come from the sidecar's answer to
-the client; `dispatch`, `receive` and `respond` come from the sidecar's own
-record of events, `~/.aac/agents/starter/state/telemetry.jsonl` (one JSON
-object per line, named by `event_type`), where you can find the same values.
+The output includes the actual mint response, root/task IDs, dispatch and
+receive events, signed terminal receipt, reservation/order and
+`terminal_attestation_verification: verified`. An HTTP 200 or `dispatched`
+acknowledgement alone does not pass. Read the output alongside
+[agent/client.py](agent/client.py) and [agent/agent.py](agent/agent.py).
 
-**mint.** `start_task` in `agent/client.py` asks the sidecar to start a task
-for a person (a synthetic one here) under the class of action `demo_verify`.
-The client signs this native request with the same pair secret it already uses
-for A2A. Both mint aliases require that signature from sidecar v0.4.0. The client
-serializes once and sends the exact signed bytes; it does not retry mint after
-an uncertain result. Pairing freshness does not make chain creation idempotent.
+The normal run reports an unpaid synthetic $8,000 reservation. In the separate
+fare-change run Tourfedia sees $9,500 and declines before reserving; this is a
+business decision. The fresh-authority run starts a new Vantis authorization
+under the simulated $10,000 approval and reserves at $9,500. It does not widen
+the old authority held by Tourfedia.
 
-An authorized originator may hold this secret only inside the same trusted
-application boundary. It also gains callback-signing capability; it is not a
-mint-only credential. Never share it across agent pairs or tenants.
+Local `state/telemetry.jsonl` and `state/actions.jsonl` contain the protocol
+and business evidence. The demo operator controls both stacks and reads their
+records locally. This is not automatic access to another tenant's files.
+Central telemetry remains off here; enriched graph integration is separate.
 
-The sidecar mints a *root authority*: a signed token that says who the work
-is for and what it may do. Its restrictions, the action `dev_noop` and an
-expiry time, come from that class of action in the sidecar configuration
-`aac init` wrote.
+## 5. Refusals and controlled attacks
 
-**agent.** The sidecar calls your agent's `/invoke` with that authority,
-signed with the pairing secret the two share, and returns your agent's answer
-to the client. `decide` in `agent/agent.py` answers `forward` to the
-destination `self_receive` and adds a restriction, `task_ref`. The sidecar
-answers the client at this point and carries out the forward afterwards; the
-client follows it in the record.
-
-**dispatch.** The sidecar mints the delegated step and sends it to
-`self_receive`. Compare its restrictions with the root's: one more
-restriction and an earlier expiry. Authority only narrows as it is passed on.
-The sidecar writes this record when the step has been answered.
-
-**receive.** `self_receive` is this same agent, so the delegated step comes
-back to the sidecar, which now checks it as its receiver: the signature chain
-back to your root key, the workload that presented it (its SPIFFE ID,
-certified by your development CA), that the step is meant for this workload,
-and that it has not been seen before. The root key and CA it checks against
-are the ones the publisher uploaded to AAC.
-
-**respond.** The sidecar hands the verified step to your agent, which answers
-`settle`. The sidecar signs a *terminal attestation*: a receipt that the task
-finished under this authority.
-
-**a2a.** `send_a2a_request` shows the other direction, an agent-to-agent
-request that your agent sends (the client plays that part). The request is
-signed with the pairing secret; the sidecar mints authority for it and
-delivers it to `self_a2a`, again this same agent, through its A2A route.
-
-**refused.** A call to your agent without the pairing signature is turned
-away before your code runs. In this example the sidecar checks AAC authority
-and calls `decide`. The guard authenticates possession of the pair secret; an
-authorized originator holding that secret can also sign such calls.
-
-## Make it your own
-
-Change `decide` in `agent/agent.py`, then:
-
-```bash
-./starter up
-./starter exercise
+```sh
+./demo check
 ```
 
-`./starter up` rebuilds the agent image every time. The exercise shows only
-what happened: if your agent answers `refuse`, the `agent` line shows the
-refusal and nothing is forwarded. At the first step an agent may answer only
-`forward` or `refuse` (`settle` finishes a step it has received); the sidecar
-reports any other answer as a failed delivery, with the reason in the `agent`
-line.
+This explicit test driver uses CLI-issued test material and the public
+`cryptography==50.0.1` package. Its isolated container mounts the two test
+identities; the normal applications never receive those private keys.
+The driver constructs the attack chains itself using a test-only copy of the
+AAC v1 wire encoding accepted by sidecar v0.4.1. Keep it aligned with the tested
+sidecar release; its positive controls must pass before an attack result counts.
 
-## Stop and start again
+It checks both chain-start aliases: absent, wrong-pair and altered signatures
+must fail before any successful mint or application invocation. It constructs
+an otherwise valid $8,000 → $9,500 continuation signed by Tourfedia and
+addressed to Vantis; Vantis must return `ERR_CHAIN_INVALID` before invoking
+its application. A $7,000 control proves that the same identities, trust,
+encoding and route work. It also sends Tourfedia a fresh proof signed by
+Tourfedia instead of Vantis: `ERR_PRESENTER_NOT_PREVIOUS_HOLDER` must precede
+booking invocation. The correctly presented control succeeds.
 
-```bash
-./starter down
-./starter up
+For the **local** widening check, explicitly add a test-only return destination
+and enable the booking application's test decision:
+
+```sh
+cp .local/booking.yaml .local/booking-test.yaml
+cat >> .local/booking-test.yaml <<EOF
+destinations:
+  test_vantis:
+    url: https://trip-planner:9443/v1/agent/receive
+    audience_pattern: $VANTIS_ID
+    valid_for: +5m
+    timeout_ms: 10000
+EOF
+aac init --profile tourfedia --agent booking --agent-config .local/booking-test.yaml
+AAC_DEMO_TEST_MODE=1 ./demo up
+./demo run local-widening
+aac init --profile tourfedia --agent booking --agent-config .local/booking.yaml
+./demo up
 ```
 
-`down` removes the containers only. Your tenant, its trust domain, the
-workload identity and every key stay in `~/.aac/`, and the next `up` uses
-them again.
+Tourfedia's failure event must identify candidate chain validation of
+$8,000 → $9,500; no return receive or Vantis application invocation is allowed.
+The released sender validates the candidate before proof signing or transport.
+The reverse route and decision are test-only; normal booking returns
+`settle`, which means the delegated task finished, not payment settlement.
 
-## What this example leaves out
+## 6. Refresh, renew and restart
 
-This example shows how AAC works; it is not a deployment recipe. It leaves
-out:
+Refresh uses the last explicitly applied input, even if the source YAML has
+since been edited. To apply edits, pass `--agent-config` explicitly.
 
-* **Production hardening** of containers and secrets, such as read-only file
-  systems, dropped capabilities and a secret store. The AAC sidecar
-  documentation covers deployment.
-* **Replay protection across restarts.** The sidecar here uses the Basic
-  replay profile, which remembers the proofs it has seen in memory, so a
-  restart forgets them. Production uses the Shared durable profile.
-* **Retries and failure handling.** When something fails, the message from
-  Docker, the CLI or the sidecar is what you see.
-* **More than one tenant or workload at a time**, and native Windows.
-* **A production certificate lifecycle.** The default run uses development
-  material: leaf certificates last one day and the development CA seven.
-  The CLI’s two certificate cases are described below.
+```sh
+aac init --profile vantis --agent trip-planner
+aac init --profile tourfedia --agent booking
+./demo up
+./demo run
+./demo check
+```
 
-## From this example to a network of agents
+Leaf renewal keeps identities, root key, destinations and peer configuration.
+Stop the affected pair before changing mounted material, then recreate it:
 
-| | Agent 1 (starts the task) | Agents 2–100 (receive and forward) |
-|---|---|---|
-| The sidecar | yes | yes |
-| An identity: a SPIFFE ID with a certificate and key from the tenant's own issuer, chaining to the CA the tenant publishes | yes | yes |
-| The workload registered with AAC (`aac tenant add-workload --spiffe-id …`, one per agent, scriptable) | yes | yes |
-| A root signing key (mints the chain's first authority) | yes | no — a forwarding sidecar narrows the authority it received and signs its proof with its own identity key |
-| A receipt-signing (terminal attestation) key | if it finishes tasks | agent 100, which finishes the task |
-| The sidecar config, the pairing secret shared with its agent, the tenant API key its sidecar uses to reach AAC | yes | yes |
+```sh
+./demo compose booking stop sidecar agent
+aac agent renew --agent booking
+./demo up
+./demo run
+./demo check
+```
 
-Once per tenant, not per agent: tenant registration and admin key; one publisher publishing the tenant's CA and the originators' root public keys (here only agent 1's). Worked example: a chain of 100 agents where agent n calls agent n+1.
+CA renewal additionally requires public republication and explicit peer HTTPS
+trust refresh. Old published anchors remain until deliberately retired.
 
-## Two ways to get your agent’s certificates
+```sh
+./demo compose booking stop sidecar agent
+aac agent renew --agent booking --ca
+./demo compose booking up -d --force-recreate publisher
+aac agent status --agent booking --remote
+# Reapply Vantis's input to read Tourfedia's replacement PUBLIC CA.
+aac init --profile vantis --agent trip-planner --agent-config .local/trip-planner.yaml
+./demo up
+./demo run
+./demo check
+```
 
-The steps above use development material. The CLI also accepts certificates
-your own issuer signed; pass its flags through `./starter setup`. Both cases
-use the same container mounts. Supplying certificates alone does not make
-this teaching example a production deployment.
+`up` waits for the current anchor ID to be published. Repeat the same procedure
+with the roles reversed: renew `trip-planner`, reapply `booking.yaml`, restart,
+and repeat both directions' checks. Compare the generated configuration before
+and after maintenance: only expected certificate/CA references and trust bytes
+should change; classes, destinations, identities and durations must remain.
 
-<!-- material-cases:start -->
+For **supplied certificates**, your issuer generates the replacement; the CLI
+does not issue it and stores no CA private key. Pass the issuer's files:
 
-<!-- Generated from aac_cli/material_cases.py. Do not edit by hand. -->
+```sh
+./demo compose booking stop sidecar agent
+aac agent renew --agent booking --workload-cert-file /issuer/booking/workload.crt --workload-key-file /issuer/booking/workload.key --terminal-cert-file /issuer/booking/terminal.crt --terminal-key-file /issuer/booking/terminal.key --tls-cert-file /issuer/booking/server.crt --tls-key-file /issuer/booking/server.key --ca-cert-file /issuer/booking/ca.crt
+```
 
-### The CLI creates a development CA
+That command applies to an agent originally initialized with the seven supplied
+material flags. It does not convert a development-issued agent to supplied mode.
+Certificates must retain its registered SPIFFE identity and cover `booking`,
+`localhost` and `127.0.0.1`. On a CA replacement, republish and refresh peer
+trust as above before restart. Certificate source does not certify a production
+deployment. The live acceptance procedure covers this separate mode.
 
-The laptop case. The CLI creates a certificate authority on this machine and signs the agent's identity, receipt and HTTPS certificates with it.
+## Cleanup and limits
 
-**Flags.** No flags are needed. To reuse a development CA across agents, pass `--ca-key-file` and `--ca-cert-file` together; neither one alone.
+```sh
+./demo down
+```
 
-**Keys and signatures.** The CA and the two identity keys are Ed25519; the HTTPS key is EC P-256.
+This removes the local containers/network and preserves the CLI home and
+evidence. Tenant registrations are permanent; deleting a local profile does
+not delete a tenant. Keep protected copies of credentials and keys, or
+deliberately retire test workloads through the supported tenant lifecycle.
+Do not delete someone else's material as cleanup.
 
-**The CLI** creates a 7-day certificate authority and keeps its private key in the agent's keep/ folder; issues the workload, receipt and HTTPS certificates; publishes the CA certificate as a trust anchor named `<agent>-dev-ca`.
+This teaches native AAC, not A2A, payment processing, durable inventory,
+production hardening, retries or reliable delivery. Basic replay history is
+lost on sidecar restart. The runtime's receipt grade is audit evidence; this
+runner requires `verified` rather than claiming a fail-closed runtime policy.
+The distinct receipt key is not an enforced certificate-role isolation boundary.
 
-**The CLI does not** ask you for anything from your own certificate authority.
+## Tests and recorded evidence
 
-**Renewal.** `aac agent renew --agent <name>` issues fresh certificates from the same CA.
+```sh
+python -m pip install -r tests/requirements.txt
+python -m pytest tests -q --ignore tests/live
+AAC_DEMO_LIVE=1 python -m pytest tests/live -q
+# Explicitly enable configuration and certificate lifecycle mutations:
+AAC_DEMO_LIVE=1 AAC_DEMO_LIFECYCLE=1 python -m pytest tests/live -q
+```
 
-### I bring my own CA
-
-The production case. Your own issuer has already signed the agent's certificates, and your CA private key never reaches this machine.
-
-**Flags.** All seven together: `--workload-cert-file`, `--terminal-cert-file` and `--tls-cert-file`, each with its key file (`--workload-key-file`, `--terminal-key-file`, `--tls-key-file`), plus `--ca-cert-file`. Never `--ca-key-file`: the CLI does not want your CA key.
-
-**Keys and signatures.** Your CA's key must be Ed25519 or EC P-256, and it must have signed each certificate with Ed25519 or ECDSA-with-SHA-256. The two identity keys may be Ed25519 or EC P-256; the HTTPS key must be EC P-256. RSA is not supported: the sidecar cannot verify against it.
-
-**The CLI** checks each certificate against its key, its issuer and its validity window; registers the workload and writes the settings files and the pairing secret; publishes your CA certificate as a trust anchor named `<agent>-ca`.
-
-**The CLI does not** create a certificate authority; issue any certificate; ask for, read or store your CA private key.
-
-**Renewal.** `aac agent renew --agent <name>` cannot reissue what it did not sign: it takes the replacements your issuer produced.
-
-<!-- material-cases:end -->
-
-## Troubleshooting
-
-* After a day or more the development certificates have expired, and the
-  sidecar cannot use them. Run `aac agent renew --agent starter`,
-  then `./starter up`.
-* `error from registry: denied` while downloading: a stale registry login.
-  Run `docker logout ghcr.io` (or `docker logout`); both images are public.
-* The image download never finishes: Docker's credential helper is not
-  answering. `printf 'https://index.docker.io/v1/' | docker-credential-desktop get`
-  should answer at once on Docker Desktop; if it hangs, restart Docker
-  Desktop.
-* `./starter up` gives up waiting for your public keys after five minutes:
-  `docker logs aac-starter-publisher-1` shows each upload attempt.
-* Anything else the sidecar did: `docker logs aac-starter-sidecar-1`.
-* To see what `aac init` created and whether it is complete:
-  `aac agent status --agent starter`.
-* Another tenant or agent: set `AAC_STARTER_PROFILE` and
-  `AAC_STARTER_AGENT` to new names for every `./starter` command (an
-  agent belongs to the profile that created it).
-
-For dated test results and environment details, see the
-[validation evidence](docs/evidence/README.md).
-
-## License
-
-Apache-2.0 (see `LICENSE`). The sidecar image you pull is distributed under
-its own developer-beta license, shown on its Docker Hub page.
+Live tests use the already-authorized, configured tenants in `AAC_CLI_HOME`.
+They read the input copies in `.local/`; set `AAC_DEMO_CONFIG_DIR` if yours are
+elsewhere. The supplied-material test uses the CLI-issued booking material as
+a test issuer and imports it through the supported supplied-file flags into
+`book-supplied`, a separate local slot for the **same booking workload**.
+Only one slot runs at a time; neither the business application nor that supplied
+slot receives the issuer's CA private key. The test restores the normal booking
+slot afterwards. This tests replacement mechanics, not a production issuer.
+See [docs/evidence/README.md](docs/evidence/README.md) for exact measured
+versions, commits, positive/negative cases and lifecycle receipts.
+Historical one-agent measurements remain historical; they are not B271 passes.

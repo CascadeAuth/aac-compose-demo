@@ -1,7 +1,7 @@
 # Test dependencies. CLI and invoke-auth versions match the installation
 # commands in README.md and agent/Dockerfile.
 pytest==9.0.2
-aac-cli==0.2.0
+aac-cli==0.2.2
 aac-invoke-auth[fastapi]==0.1.2
 httpx==0.28.1
 PyYAML==6.0.3

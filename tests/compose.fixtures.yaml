@@ -1,0 +1,18 @@
+# Explicit test-only driver. Neither business application receives these keys.
+services:
+  fixture:
+    build: ./tests/fixtures
+    image: aac-compose-demo-fixture:local
+    user: "${AAC_DEMO_UID:?}:${AAC_DEMO_GID:?}"
+    profiles: [tests]
+    environment:
+      AAC_TEST_VANTIS: ${AAC_TEST_VANTIS:?}
+      AAC_TEST_TOURFEDIA: ${AAC_TEST_TOURFEDIA:?}
+    networks: [peers]
+    volumes:
+      - {type: bind, source: "${AAC_TEST_VANTIS_KEYS:?}", target: /keys/vantis, read_only: true}
+      - {type: bind, source: "${AAC_TEST_TOURFEDIA_KEYS:?}", target: /keys/tourfedia, read_only: true}
+      - {type: bind, source: "${AAC_TEST_VANTIS_PAIR:?}", target: /pair/vantis, read_only: true}
+      - {type: bind, source: "${AAC_TEST_TOURFEDIA_PAIR:?}", target: /pair/tourfedia, read_only: true}
+      - {type: bind, source: "${AAC_DEMO_VANTIS_STATE:?}", target: /evidence/vantis, read_only: true}
+      - {type: bind, source: "${AAC_DEMO_TOURFEDIA_STATE:?}", target: /evidence/tourfedia, read_only: true}

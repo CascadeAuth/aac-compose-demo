@@ -41,19 +41,23 @@ follows.
    the example teaches. It keeps only what running it requires: the
    containers run as you so they can read the key files the CLI creates.
 4. **No reliability code.** No retries, recovery wrappers, guards for unusual
-   setups, diagnostics commands or side-by-side tenants. When something goes
+   setups or diagnostics commands. The two independent fictional tenants are
+   the lesson, not a general multi-tenant deployment framework. When something goes
    wrong, the message from Docker or the CLI is the message; the README's
    short troubleshooting list covers the common cases.
 5. **The CLI is the only generator.** The example never creates, copies or
    edits keys, certificates or the sidecar configuration. It reads what
    `aac init` wrote.
 6. **Say what is left out.** The README names what the example does not show
-   (production deployment, durable replay protection, retries, several
-   tenants, native Windows) and where that is documented.
+   (production deployment, durable replay protection, retries, real bookings
+   or payments, native Windows) and where that is documented.
 7. **Tests keep the example working, nothing more.** The Compose file matches
    what the CLI writes, the agent refuses unsigned calls, the client runs the
    flow, and an opt-in live test measures the documented steps on a real
    tenant.
+   The explicit test-only adversarial driver also constructs wire-format
+   fixtures to bypass the sender guard and demonstrate receiver enforcement;
+   maintain its encoding and positive controls against the tested sidecar release.
 
 ## Before adding something
 

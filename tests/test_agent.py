@@ -1,82 +1,84 @@
-"""The sample agent, exercised through FastAPI's test client with a known secret."""
-
-from __future__ import annotations
-
+"""Business policy and the actual pairing middleware."""
 import importlib
 import json
-import os
 import sys
-from pathlib import Path
 
 import pytest
 from aac_invoke_auth import sign_invoke_request
 from fastapi.testclient import TestClient
-
 from conftest import AGENT_DIR
 
-SECRET = b"synthetic-starter-pairing-secret-0000"
+SECRET = b"synthetic-pairing-secret-0000000000"
 
 
 @pytest.fixture
-def agent_app(tmp_path: Path, monkeypatch):
-    secret_file = tmp_path / "pairing.secret"
-    secret_file.write_bytes(SECRET + b"\n")
-    monkeypatch.setenv("AAC_INVOKE_AUTH_SECRET_FILE", str(secret_file))
-    monkeypatch.setenv("AAC_INVOKE_AUTH_ALLOW_UNAUTHENTICATED", "false")
+def module(tmp_path, monkeypatch):
+    secret = tmp_path / "pairing.secret"
+    secret.write_bytes(SECRET)
+    monkeypatch.setenv("AAC_INVOKE_AUTH_SECRET_FILE", str(secret))
+    monkeypatch.setenv("AAC_DEMO_ROLE", "booking")
+    monkeypatch.setenv("AAC_DEMO_ACTIONS", str(tmp_path / "actions.jsonl"))
     monkeypatch.syspath_prepend(str(AGENT_DIR))
     sys.modules.pop("agent", None)
-    module = importlib.import_module("agent")
-    with TestClient(module.app) as client:
-        yield client
+    return importlib.import_module("agent")
 
 
-def post(client: TestClient, path: str, value: dict, mode: str = "valid"):
-    raw = json.dumps(value, separators=(",", ":")).encode()
-    headers = {"Content-Type": "application/json", "X-AAC-Task-Ref": "starter-task"}
-    if mode != "missing":
-        secret = SECRET if mode != "wrong" else b"wrong"
-        headers.update(sign_invoke_request(secret=secret, method="POST", path=path, headers=headers, body=raw))
-    if mode == "tampered":
+def body(module, **extra):
+    return {"task_ref": "po4143-test", "current_arrival": {"payload": {**module.ORDER, "offer": 8000, **extra}}}
+
+
+@pytest.mark.parametrize("mode", ["absent", "wrong-pair", "altered"])
+def test_unauthenticated_callback_never_invokes_application(module, mode, tmp_path):
+    raw = json.dumps(body(module)).encode()
+    headers = {"Content-Type": "application/json"}
+    if mode != "absent":
+        headers.update(sign_invoke_request(secret=SECRET if mode == "altered" else b"wrong",
+                                           method="POST", path="/invoke", headers=headers, body=raw))
+    if mode == "altered":
         raw += b" "
-    return client.post(path, headers=headers, content=raw)
+    with TestClient(module.app) as client:
+        assert client.post("/invoke", headers=headers, content=raw).status_code == 401
+    assert not (tmp_path / "actions.jsonl").exists()
 
 
-@pytest.mark.parametrize("path", ["/invoke", "/a2a/v1"])
-@pytest.mark.parametrize("mode", ["missing", "wrong", "tampered"])
-def test_protected_routes_refuse_unauthenticated_calls(agent_app, path, mode):
-    assert post(agent_app, path, {}, mode).status_code == 401
+def test_narrowing_and_terminal_unpaid_reservation(module):
+    request = body(module)
+    forward = module.decide("trip-planner", request)
+    assert forward["destination"] == "tourfedia"
+    assert forward["additional_predicates"]["amount_max"] == 8000
+    assert "valid_until" not in forward["additional_predicates"]
+    settled = module.decide("booking", request)
+    result = json.loads(settled["action_summary"])
+    assert settled["action"] == "settle" and result["payment_status"] == "unpaid"
+    assert result["synthetic"] and result["amount"] == 8000
+    assert result["reservation_id"] == settled["settlement_id"]
 
 
-def test_decisions_forward_then_settle_and_refuse_anything_else(agent_app):
-    forward = post(agent_app, "/invoke", {"task_ref": "starter-task", "current_arrival": {"payload": {"step": "forward"}}}).json()
-    assert forward["action"] == "forward"
-    assert forward["destination"] == "self_receive"
-    assert forward["additional_predicates"] == {"task_ref": "starter-task"}
-    assert forward["payload"] == {"step": "settle"}
-
-    settle = post(agent_app, "/invoke", {"task_ref": "starter-task", "current_arrival": {"payload": {"step": "settle"}}}).json()
-    assert settle["action"] == "settle"
-    assert settle["settlement_id"] == "starter-task"
-
-    other = post(agent_app, "/invoke", {"task_ref": "starter-task", "current_arrival": {"payload": {"step": "pay"}}}).json()
-    assert other["action"] == "refuse"
+def test_changed_fare_is_business_refusal_and_fresh_authority_can_book(module):
+    assert module.decide("booking", body(module, scenario="fare-change"))["action"] == "refuse"
+    result = module.decide("booking", body(module, scenario="fresh-authority", offer=9500))
+    assert json.loads(result["action_summary"])["amount"] == 9500
 
 
-def test_a2a_reply_shape(agent_app):
-    request = {"jsonrpc": "2.0", "id": "request-1", "method": "SendMessage",
-               "params": {"message": {"messageId": "message-1", "role": "ROLE_USER", "parts": [{"text": "hello"}]}}}
-    assert post(agent_app, "/a2a/v1", request).json() == {
-        "jsonrpc": "2.0", "id": "request-1",
-        "result": {"message": {"messageId": "message-1-reply", "contextId": "starter-message-1",
-                               "role": "ROLE_AGENT", "parts": [{"text": "Synthetic AAC-authorized reply"}]}}}
+def test_reverse_route_requires_explicit_test_mode(module):
+    request = body(module, scenario="local-widening")
+    assert module.decide("booking", request)["action"] == "refuse"
+    decision = module.decide("booking", request, test_mode=True)
+    assert decision["destination"] == "test_vantis"
+    assert decision["additional_predicates"] == {"amount_max": 9500}
 
 
-def test_missing_secret_fails_startup(monkeypatch):
-    monkeypatch.setenv("AAC_INVOKE_AUTH_SECRET_FILE", "")
-    monkeypatch.syspath_prepend(str(AGENT_DIR))
-    sys.modules.pop("agent", None)
-    from aac_invoke_auth.fastapi import InvokeAuthConfigurationError
+def test_application_checks_order_context(module):
+    assert module.decide("booking", body(module, order="PO #9999"))["action"] == "refuse"
 
-    with pytest.raises(InvokeAuthConfigurationError):
-        importlib.import_module("agent")
-    sys.modules.pop("agent", None)
+
+def test_callback_records_authenticated_root_and_token(module, tmp_path):
+    raw = json.dumps(body(module)).encode()
+    headers = {"Content-Type": "application/json", "X-AAC-Root-Token-Id": "a"*64,
+               "X-AAC-Presenter-Token-Id": "b"*64}
+    headers.update(sign_invoke_request(secret=SECRET, method="POST", path="/invoke", headers=headers, body=raw))
+    with TestClient(module.app) as client:
+        assert client.post("/invoke", headers=headers, content=raw).status_code == 200
+    record = json.loads((tmp_path / "actions.jsonl").read_text())
+    assert record["root_token_id"] == "a"*64 and record["token_id"] == "b"*64
+    assert record["decision"]["action"] == "settle"

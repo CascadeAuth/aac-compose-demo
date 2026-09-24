@@ -1,0 +1,16 @@
+agent_name: booking
+workload_path: booking
+tls_server_names: [booking, localhost, 127.0.0.1]
+sidecar:
+  dev_mode: false
+  external_bind_address: 0.0.0.0
+  agent_invoke_url: http://127.0.0.1:8000/invoke
+  telemetry:
+    sink: telemetry.jsonl
+    central_forward: false
+replay_protection:
+  backend: memory
+  deployment_profile: basic
+classes_of_action: {}
+# This terminal agent has no normal outgoing destination.
+# Add Vantis's public trust after both identities have been registered.

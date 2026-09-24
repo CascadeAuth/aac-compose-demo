@@ -5,3 +5,6 @@ __pycache__/
 .pytest_cache/
 # IDE state
 .idea/
+# Operator-authored configuration and local evidence/credentials.
+.local/
+pr-prep/

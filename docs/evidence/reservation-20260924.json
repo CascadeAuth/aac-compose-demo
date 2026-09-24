@@ -1,0 +1,1058 @@
+{
+  "schema": "aac-compose-demo.acceptance.v1",
+  "measured_utc": "2026-09-24T03:41:33.388464+00:00",
+  "implementation_commit": "0e45df5820a74d65eae864a41726b11b09981eae",
+  "platform": {
+    "os": "Darwin",
+    "machine": "arm64"
+  },
+  "versions": {
+    "aac-cli": "0.2.2",
+    "aac-invoke-auth": "0.1.2",
+    "uvicorn": "0.52.4",
+    "httpx": "0.28.1",
+    "cryptography": "50.0.1"
+  },
+  "images": [
+    {
+      "reference": "docker.io/cascadeauth/aac-sidecar:v0.4.1",
+      "id": "sha256:f9a6d92b7c15df0c033c6be4a9fca86fa327fb841b0bb2e72682abbe03ed758e",
+      "repo_digests": [
+        "cascadeauth/aac-sidecar@sha256:1379a786668227100bf20a9830c2988fcfff399fa6d6acb54f435c6bed5976f4"
+      ],
+      "architecture": "arm64"
+    },
+    {
+      "reference": "ghcr.io/cascadeauth/aac-trust-anchor-publisher:0.2.3",
+      "id": "sha256:f5d36966c2944d8bb7a703e19ed2cb0baf71c75e9301f221e8db3bb0b30088b4",
+      "repo_digests": [
+        "ghcr.io/cascadeauth/aac-trust-anchor-publisher@sha256:f2a4f0a9a00af4d5962f985341076a37a42eeb5cc1b4250d10989638ffe58b56"
+      ],
+      "architecture": "arm64"
+    }
+  ],
+  "validation": {
+    "offline_tests": 22,
+    "live_tests": 4,
+    "live_seconds": 140.23,
+    "go_public_doc_tests": 19,
+    "source_guard_tests": "go test ./internal/mint -run ^TestB284 -count=1 -v; all pass; Ed25519 and ES256 widening signer calls = 0",
+    "source_guard_provenance": "Go runtime test/continuation files byte-identical to v0.4.1",
+    "lifecycle_commands_succeeded": 63,
+    "cross_tenant_check_campaigns": 9
+  },
+  "first_reservation": {
+    "root_token_id": "b537b5e7b59811c2d31d7f5c746f6b2471b7e02465c4a41b3de64f099c49fb32",
+    "task_ref": "po4143-6dc20e5f720b",
+    "reservation": {
+      "amount": 8000,
+      "currency": "USD",
+      "departure": "12 May",
+      "from": "Austin",
+      "order": "PO #4143",
+      "payment_status": "unpaid",
+      "reservation_id": "synthetic-po4143-6dc20e5f720b",
+      "synthetic": true,
+      "to": "Shanghai"
+    },
+    "terminal_attestation_verification": "verified",
+    "dispatch": {
+      "timestamp_unix_seconds": 1790220805,
+      "event_type": "dispatch",
+      "result": "success",
+      "root_token_id": "b537b5e7b59811c2d31d7f5c746f6b2471b7e02465c4a41b3de64f099c49fb32",
+      "token_id": "c80513c89ffdafc6bfacfb5a91e4e9390cafce5f66a378dbee6027ba97ab6427",
+      "parent_token_id": "670fa061fd0643b49c65c545795f2b1875190a23864cbaea138d2b1499e72a2b",
+      "hop_index": 2,
+      "creator_svid_hash": "2eb7bcebc17d218b856117ae63c6ac0b4dadbd1538b8f26e6773db645c215569",
+      "audience_hash": "305b1176dbea88cf22bd0ec07eda9b7d141918180461d942319bf4c770230dc5",
+      "caveat_audience": "spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking",
+      "tenant_id": "tnt-135f90ba-5922-4fa6-9a7d-61b763bfd662",
+      "actor_spiffe_id": "spiffe://tnt-135f90ba-5922-4fa6-9a7d-61b763bfd662.tenants.stage.cascadeauth.dev/trip-planner",
+      "caveat_predicates": "amount_max:8000,originator_reference:PO #4143,task_ref:po4143-6dc20e5f720b,valid_until:1790222605",
+      "destination": "tourfedia",
+      "task_ref": "po4143-6dc20e5f720b",
+      "terminal_attestation_verification": "verified",
+      "agent_decision_action": "forward",
+      "latency_ms": 10.537
+    },
+    "receive": {
+      "timestamp_unix_seconds": 1790220805,
+      "event_type": "receive",
+      "result": "success",
+      "root_token_id": "b537b5e7b59811c2d31d7f5c746f6b2471b7e02465c4a41b3de64f099c49fb32",
+      "token_id": "c80513c89ffdafc6bfacfb5a91e4e9390cafce5f66a378dbee6027ba97ab6427",
+      "parent_token_id": "670fa061fd0643b49c65c545795f2b1875190a23864cbaea138d2b1499e72a2b",
+      "hop_index": 2,
+      "creator_svid_hash": "2eb7bcebc17d218b856117ae63c6ac0b4dadbd1538b8f26e6773db645c215569",
+      "audience_hash": "305b1176dbea88cf22bd0ec07eda9b7d141918180461d942319bf4c770230dc5",
+      "caveat_audience": "spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking",
+      "tenant_id": "tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd",
+      "actor_spiffe_id": "spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking",
+      "presenter_spiffe_id": "spiffe://tnt-135f90ba-5922-4fa6-9a7d-61b763bfd662.tenants.stage.cascadeauth.dev/trip-planner",
+      "caveat_predicates": "amount_max:8000,originator_reference:PO #4143,task_ref:po4143-6dc20e5f720b,valid_until:1790222605",
+      "task_ref": "po4143-6dc20e5f720b",
+      "agent_decision_action": "settle",
+      "latency_ms": 5.039
+    },
+    "respond": {
+      "timestamp_unix_seconds": 1790220805,
+      "event_type": "respond",
+      "result": "success",
+      "root_token_id": "b537b5e7b59811c2d31d7f5c746f6b2471b7e02465c4a41b3de64f099c49fb32",
+      "token_id": "c80513c89ffdafc6bfacfb5a91e4e9390cafce5f66a378dbee6027ba97ab6427",
+      "hop_index": 2,
+      "creator_svid_hash": "305b1176dbea88cf22bd0ec07eda9b7d141918180461d942319bf4c770230dc5",
+      "tenant_id": "tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd",
+      "actor_spiffe_id": "spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking",
+      "task_ref": "po4143-6dc20e5f720b",
+      "terminal_attestation": "eyJhbGciOiJFZERTQSIsImtpZCI6IjRjWmp4d3JpeTdrcEFSem51VHh2WVkwbmFaQ19lWE9vbzNORHZScEhTeWMiLCJ0eXAiOiJhYWMtdGVybWluYWwtYXR0ZXN0YXRpb24rand0IiwieDVjIjpbIk1JSUJyakNDQVdDZ0F3SUJBZ0lVT2Nvb093VDhzUXZMeHFlWXhkeUJ4VzU0OWljd0JRWURLMlZ3TUNNeElUQWZCZ05WQkFNTUdFRkJReUJzYjJOaGJDQmtaWFpsYkc5d2JXVnVkQ0JEUVRBZUZ3MHlOakE1TWpRd016STFNREZhRncweU5qQTVNalV3TXpNd01ERmFNQUF3S2pBRkJnTXJaWEFESVFEbU0vRkplWXdUdGxEaTUyNVdxSG1BUzBCWUVzSmI2T2pCSTBjSGY2K2hDS09CeURDQnhUQU1CZ05WSFJNQkFmOEVBakFBTUE0R0ExVWREd0VCL3dRRUF3SUhnREFmQmdOVkhTTUVHREFXZ0JSZk00SjdWaGFsTXkvQUtaU2Q2VVdaalQzWVhUQWRCZ05WSFNVRUZqQVVCZ2dyQmdFRkJRY0RBZ1lJS3dZQkJRVUhBd0V3WlFZRFZSMFJBUUgvQkZzd1dZWlhjM0JwWm1abE9pOHZkRzUwTFRJelpqTmxZMkl5TFRGa09HSXRORGcwTXkxaVl6azNMVE13T1RobU5UWm1NekJtWkM1MFpXNWhiblJ6TG5OMFlXZGxMbU5oYzJOaFpHVmhkWFJvTG1SbGRpOWliMjlyYVc1bk1BVUdBeXRsY0FOQkFCcXl5bjZpaXIwL3p2Z1ZRZVBJencrTCtvbVJWM1Q5UU5ydlJpM0VMMnVsOStHem5sNWFFbDhDREtsQUI0a0RSemMybFAwQzM4YXA4Wi9XOWpHMTd3TT0iXX0.eyJhY3Rpb25fc3VtbWFyeSI6IntcImFtb3VudFwiOiA4MDAwLCBcImN1cnJlbmN5XCI6IFwiVVNEXCIsIFwiZGVwYXJ0dXJlXCI6IFwiMTIgTWF5XCIsIFwiZnJvbVwiOiBcIkF1c3RpblwiLCBcIm9yZGVyXCI6IFwiUE8gIzQxNDNcIiwgXCJwYXltZW50X3N0YXR1c1wiOiBcInVucGFpZFwiLCBcInJlc2VydmF0aW9uX2lkXCI6IFwic3ludGhldGljLXBvNDE0My02ZGMyMGU1ZjcyMGJcIiwgXCJzeW50aGV0aWNcIjogdHJ1ZSwgXCJ0b1wiOiBcIlNoYW5naGFpXCJ9IiwiaWF0IjoxNzkwMjIwODA1LCJpc3MiOiJ0bnQtMjNmM2VjYjItMWQ4Yi00ODQzLWJjOTctMzA5OGY1NmYzMGZkIiwicm9vdF90b2tlbl9pZCI6ImI1MzdiNWU3YjU5ODExYzJkMzFkN2Y1Yzc0NmY2YjI0NzFiN2UwMjQ2NWM0YTQxYjNkZTY0ZjA5OWM0OWZiMzIiLCJzZXR0bGVtZW50X2lkIjoic3ludGhldGljLXBvNDE0My02ZGMyMGU1ZjcyMGIiLCJ0YXNrX3JlZiI6InBvNDE0My02ZGMyMGU1ZjcyMGIiLCJ0ZXJtaW5hbF9hZ2VudF9zdmlkIjoic3BpZmZlOi8vdG50LTIzZjNlY2IyLTFkOGItNDg0My1iYzk3LTMwOThmNTZmMzBmZC50ZW5hbnRzLnN0YWdlLmNhc2NhZGVhdXRoLmRldi9ib29raW5nIn0.hLJvyal2QiF6q4UM54AMVJI7Dgmb-jF-s53lXp-A5GbrfKEtpmnPrBhAxoOVfZEYiT7sXpCPacMn60w-dpiVAw",
+      "agent_decision_action": "settle"
+    }
+  },
+  "initial_refusals": {
+    "chain_start": [
+      {
+        "case": "absent",
+        "alias": "delegations",
+        "http_status": 401,
+        "response": {
+          "error": {
+            "code": "ERR_PAIRING_AUTH_FAILED",
+            "message": "native chain-start pairing authentication failed",
+            "detail": null,
+            "request_id": "req-aac-sdk-6d124dd1f87f"
+          }
+        },
+        "successful_mints": 0,
+        "application_invocations": 0
+      },
+      {
+        "case": "wrong-pair",
+        "alias": "delegations",
+        "http_status": 401,
+        "response": {
+          "error": {
+            "code": "ERR_PAIRING_AUTH_FAILED",
+            "message": "native chain-start pairing authentication failed",
+            "detail": null,
+            "request_id": "req-aac-sdk-f4c2cac1ecc3"
+          }
+        },
+        "successful_mints": 0,
+        "application_invocations": 0
+      },
+      {
+        "case": "altered",
+        "alias": "delegations",
+        "http_status": 401,
+        "response": {
+          "error": {
+            "code": "ERR_PAIRING_AUTH_FAILED",
+            "message": "native chain-start pairing authentication failed",
+            "detail": null,
+            "request_id": "req-aac-sdk-72fe72447303"
+          }
+        },
+        "successful_mints": 0,
+        "application_invocations": 0
+      },
+      {
+        "case": "absent",
+        "alias": "mint-root",
+        "http_status": 401,
+        "response": {
+          "error": {
+            "code": "ERR_PAIRING_AUTH_FAILED",
+            "message": "native chain-start pairing authentication failed",
+            "detail": null,
+            "request_id": "req-aac-sdk-f5e82b5e8448"
+          }
+        },
+        "successful_mints": 0,
+        "application_invocations": 0
+      },
+      {
+        "case": "wrong-pair",
+        "alias": "mint-root",
+        "http_status": 401,
+        "response": {
+          "error": {
+            "code": "ERR_PAIRING_AUTH_FAILED",
+            "message": "native chain-start pairing authentication failed",
+            "detail": null,
+            "request_id": "req-aac-sdk-46238585b4e5"
+          }
+        },
+        "successful_mints": 0,
+        "application_invocations": 0
+      },
+      {
+        "case": "altered",
+        "alias": "mint-root",
+        "http_status": 401,
+        "response": {
+          "error": {
+            "code": "ERR_PAIRING_AUTH_FAILED",
+            "message": "native chain-start pairing authentication failed",
+            "detail": null,
+            "request_id": "req-aac-sdk-abf8dc412531"
+          }
+        },
+        "successful_mints": 0,
+        "application_invocations": 0
+      }
+    ],
+    "receiver": [
+      {
+        "case": "return-control",
+        "root_token_id": "0bfb982ebe8092e5ea16ae89f31133fef12a28db75270b372f2a21ccb8cbe146",
+        "task_ref": "fixture-f541a8f705c24a6ba9a2b2868b5e3a33",
+        "http_status": 200,
+        "response": {
+          "action": "refuse",
+          "chain_provenance": {
+            "hop_index": 3,
+            "inbound_token_id": "3f1c86105a509cc4011216b8a54f4bb9608ffe0aed618c2d25f6771ce1a2194d",
+            "originator_tenant_id": "tnt-135f90ba-5922-4fa6-9a7d-61b763bfd662",
+            "presenter_spiffe_id": "spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking",
+            "root_token_id": "0bfb982ebe8092e5ea16ae89f31133fef12a28db75270b372f2a21ccb8cbe146"
+          },
+          "chain_verification": "PASSED",
+          "reason": "Test receiver invoked; no business action.",
+          "root_token_id": "0bfb982ebe8092e5ea16ae89f31133fef12a28db75270b372f2a21ccb8cbe146",
+          "settlement_id": null,
+          "status": "refused",
+          "task_ref": "fixture-f541a8f705c24a6ba9a2b2868b5e3a33",
+          "terminal_attestation": null
+        },
+        "application_invocations": 1
+      },
+      {
+        "case": "forced-widening",
+        "root_token_id": "f1f03c17492c3db85e8b88ffa9a69f846d97fbd62c12035cb1785a9a58f8fc1f",
+        "task_ref": "fixture-3a710c48c1f548e8b7c7e6652300f11f",
+        "http_status": 403,
+        "response": {
+          "error": {
+            "code": "ERR_CHAIN_INVALID",
+            "message": "inbound chain failed verification",
+            "detail": "caveat at hop 3 tries to widen amount_max from 8000 to 9500 \u2014 macaroon chains may only narrow, never widen",
+            "request_id": "req-aac-sdk-ae866bbd3cb5"
+          }
+        },
+        "application_invocations": 0
+      },
+      {
+        "case": "presenter-control",
+        "root_token_id": "221057d55570d5d9d4ccf43133cd5fafba5a6fa1e40f9607c183608bf6f011b0",
+        "task_ref": "fixture-ff73c872fd944ee4bbff07f3cf6692cd",
+        "http_status": 200,
+        "response": {
+          "action": "settle",
+          "chain_provenance": {
+            "hop_index": 2,
+            "inbound_token_id": "5dae431b397f1824acfee0915ab8fe627b45f74ebeffba748e939775c66618f2",
+            "originator_tenant_id": "tnt-135f90ba-5922-4fa6-9a7d-61b763bfd662",
+            "presenter_spiffe_id": "spiffe://tnt-135f90ba-5922-4fa6-9a7d-61b763bfd662.tenants.stage.cascadeauth.dev/trip-planner",
+            "root_token_id": "221057d55570d5d9d4ccf43133cd5fafba5a6fa1e40f9607c183608bf6f011b0"
+          },
+          "chain_verification": "PASSED",
+          "reason": null,
+          "root_token_id": "221057d55570d5d9d4ccf43133cd5fafba5a6fa1e40f9607c183608bf6f011b0",
+          "settlement_id": "synthetic-fixture-ff73c872fd944ee4bbff07f3cf6692cd",
+          "status": "settled",
+          "task_ref": "fixture-ff73c872fd944ee4bbff07f3cf6692cd",
+          "terminal_attestation": "eyJhbGciOiJFZERTQSIsImtpZCI6IjRjWmp4d3JpeTdrcEFSem51VHh2WVkwbmFaQ19lWE9vbzNORHZScEhTeWMiLCJ0eXAiOiJhYWMtdGVybWluYWwtYXR0ZXN0YXRpb24rand0IiwieDVjIjpbIk1JSUJyakNDQVdDZ0F3SUJBZ0lVT2Nvb093VDhzUXZMeHFlWXhkeUJ4VzU0OWljd0JRWURLMlZ3TUNNeElUQWZCZ05WQkFNTUdFRkJReUJzYjJOaGJDQmtaWFpsYkc5d2JXVnVkQ0JEUVRBZUZ3MHlOakE1TWpRd016STFNREZhRncweU5qQTVNalV3TXpNd01ERmFNQUF3S2pBRkJnTXJaWEFESVFEbU0vRkplWXdUdGxEaTUyNVdxSG1BUzBCWUVzSmI2T2pCSTBjSGY2K2hDS09CeURDQnhUQU1CZ05WSFJNQkFmOEVBakFBTUE0R0ExVWREd0VCL3dRRUF3SUhnREFmQmdOVkhTTUVHREFXZ0JSZk00SjdWaGFsTXkvQUtaU2Q2VVdaalQzWVhUQWRCZ05WSFNVRUZqQVVCZ2dyQmdFRkJRY0RBZ1lJS3dZQkJRVUhBd0V3WlFZRFZSMFJBUUgvQkZzd1dZWlhjM0JwWm1abE9pOHZkRzUwTFRJelpqTmxZMkl5TFRGa09HSXRORGcwTXkxaVl6azNMVE13T1RobU5UWm1NekJtWkM1MFpXNWhiblJ6TG5OMFlXZGxMbU5oYzJOaFpHVmhkWFJvTG1SbGRpOWliMjlyYVc1bk1BVUdBeXRsY0FOQkFCcXl5bjZpaXIwL3p2Z1ZRZVBJencrTCtvbVJWM1Q5UU5ydlJpM0VMMnVsOStHem5sNWFFbDhDREtsQUI0a0RSemMybFAwQzM4YXA4Wi9XOWpHMTd3TT0iXX0.eyJhY3Rpb25fc3VtbWFyeSI6IntcImFtb3VudFwiOiA4MDAwLCBcImN1cnJlbmN5XCI6IFwiVVNEXCIsIFwiZGVwYXJ0dXJlXCI6IFwiMTIgTWF5XCIsIFwiZnJvbVwiOiBcIkF1c3RpblwiLCBcIm9yZGVyXCI6IFwiUE8gIzQxNDNcIiwgXCJwYXltZW50X3N0YXR1c1wiOiBcInVucGFpZFwiLCBcInJlc2VydmF0aW9uX2lkXCI6IFwic3ludGhldGljLWZpeHR1cmUtZmY3M2M4NzJmZDk0NGVlNGJiZmYwN2YzY2Y2NjkyY2RcIiwgXCJzeW50aGV0aWNcIjogdHJ1ZSwgXCJ0b1wiOiBcIlNoYW5naGFpXCJ9IiwiaWF0IjoxNzkwMjIwODYzLCJpc3MiOiJ0bnQtMjNmM2VjYjItMWQ4Yi00ODQzLWJjOTctMzA5OGY1NmYzMGZkIiwicm9vdF90b2tlbl9pZCI6IjIyMTA1N2Q1NTU3MGQ1ZDlkNGNjZjQzMTMzY2Q1ZmFmYmE1YTZmYTFlNDBmOTYwN2MxODM2MDhiZjZmMDExYjAiLCJzZXR0bGVtZW50X2lkIjoic3ludGhldGljLWZpeHR1cmUtZmY3M2M4NzJmZDk0NGVlNGJiZmYwN2YzY2Y2NjkyY2QiLCJ0YXNrX3JlZiI6ImZpeHR1cmUtZmY3M2M4NzJmZDk0NGVlNGJiZmYwN2YzY2Y2NjkyY2QiLCJ0ZXJtaW5hbF9hZ2VudF9zdmlkIjoic3BpZmZlOi8vdG50LTIzZjNlY2IyLTFkOGItNDg0My1iYzk3LTMwOThmNTZmMzBmZC50ZW5hbnRzLnN0YWdlLmNhc2NhZGVhdXRoLmRldi9ib29raW5nIn0.ozCv3HCGW0FN3esIDysY8HXman8NP5KzRs6HDVVuIFAvIBYsSHT3XfDAKt_pU3HdtyaDX4qvFH-hBWNq03RwBg"
+        },
+        "application_invocations": 1
+      },
+      {
+        "case": "wrong-presenter",
+        "root_token_id": "8c4b763322d039d4dcc8bedd5599fba7acd7311beb144af29af4cba6d4418d72",
+        "task_ref": "fixture-204a9afddf6044258fdfdc21764aaa44",
+        "http_status": 403,
+        "response": {
+          "error": {
+            "code": "ERR_PRESENTER_NOT_PREVIOUS_HOLDER",
+            "message": "DPoP presenter does not match chain's previous-holder audience pattern",
+            "detail": "Holder binding failed: DPoP presenter SPIFFE 'spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking' does not match the chain's previous-holder audience pattern 'spiffe://tnt-135f90ba-5922-4fa6-9a7d-61b763bfd662.tenants.stage.cascadeauth.dev/trip-planner'",
+            "request_id": "req-aac-sdk-0a1c2256f15c"
+          }
+        },
+        "application_invocations": 0
+      }
+    ]
+  },
+  "business_outcomes_during_lifecycle": [
+    {
+      "root_token_id": "574fb9be26eb50310a4348eb0dd145d2d3e288b960ced7be5df70af68e630022",
+      "task_ref": "po4143-0baf3455228c",
+      "reservation": {
+        "amount": 8000,
+        "currency": "USD",
+        "departure": "12 May",
+        "from": "Austin",
+        "order": "PO #4143",
+        "payment_status": "unpaid",
+        "reservation_id": "synthetic-po4143-0baf3455228c",
+        "synthetic": true,
+        "to": "Shanghai"
+      },
+      "terminal_attestation_verification": "verified",
+      "dispatch": {
+        "timestamp_unix_seconds": 1790220902,
+        "event_type": "dispatch",
+        "result": "success",
+        "root_token_id": "574fb9be26eb50310a4348eb0dd145d2d3e288b960ced7be5df70af68e630022",
+        "token_id": "7dd33b4b1e3988a1d437a73128ee73163cf1d31a36d42e0b76457af94bdf352b",
+        "parent_token_id": "09868006d92057d1b4b5464cd76a5694b8e40a655abf7d0c6500ee2fbcc4d2ad",
+        "hop_index": 2,
+        "creator_svid_hash": "2eb7bcebc17d218b856117ae63c6ac0b4dadbd1538b8f26e6773db645c215569",
+        "audience_hash": "305b1176dbea88cf22bd0ec07eda9b7d141918180461d942319bf4c770230dc5",
+        "caveat_audience": "spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking",
+        "tenant_id": "tnt-135f90ba-5922-4fa6-9a7d-61b763bfd662",
+        "actor_spiffe_id": "spiffe://tnt-135f90ba-5922-4fa6-9a7d-61b763bfd662.tenants.stage.cascadeauth.dev/trip-planner",
+        "caveat_predicates": "amount_max:8000,originator_reference:PO #4143,task_ref:po4143-0baf3455228c,valid_until:1790222702",
+        "destination": "tourfedia",
+        "task_ref": "po4143-0baf3455228c",
+        "terminal_attestation_verification": "verified",
+        "agent_decision_action": "forward",
+        "latency_ms": 14.606
+      },
+      "receive": {
+        "timestamp_unix_seconds": 1790220902,
+        "event_type": "receive",
+        "result": "success",
+        "root_token_id": "574fb9be26eb50310a4348eb0dd145d2d3e288b960ced7be5df70af68e630022",
+        "token_id": "7dd33b4b1e3988a1d437a73128ee73163cf1d31a36d42e0b76457af94bdf352b",
+        "parent_token_id": "09868006d92057d1b4b5464cd76a5694b8e40a655abf7d0c6500ee2fbcc4d2ad",
+        "hop_index": 2,
+        "creator_svid_hash": "2eb7bcebc17d218b856117ae63c6ac0b4dadbd1538b8f26e6773db645c215569",
+        "audience_hash": "305b1176dbea88cf22bd0ec07eda9b7d141918180461d942319bf4c770230dc5",
+        "caveat_audience": "spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking",
+        "tenant_id": "tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd",
+        "actor_spiffe_id": "spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking",
+        "presenter_spiffe_id": "spiffe://tnt-135f90ba-5922-4fa6-9a7d-61b763bfd662.tenants.stage.cascadeauth.dev/trip-planner",
+        "caveat_predicates": "amount_max:8000,originator_reference:PO #4143,task_ref:po4143-0baf3455228c,valid_until:1790222702",
+        "task_ref": "po4143-0baf3455228c",
+        "agent_decision_action": "settle",
+        "latency_ms": 8.233
+      },
+      "respond": {
+        "timestamp_unix_seconds": 1790220902,
+        "event_type": "respond",
+        "result": "success",
+        "root_token_id": "574fb9be26eb50310a4348eb0dd145d2d3e288b960ced7be5df70af68e630022",
+        "token_id": "7dd33b4b1e3988a1d437a73128ee73163cf1d31a36d42e0b76457af94bdf352b",
+        "hop_index": 2,
+        "creator_svid_hash": "305b1176dbea88cf22bd0ec07eda9b7d141918180461d942319bf4c770230dc5",
+        "tenant_id": "tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd",
+        "actor_spiffe_id": "spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking",
+        "task_ref": "po4143-0baf3455228c",
+        "terminal_attestation": "eyJhbGciOiJFZERTQSIsImtpZCI6IjRjWmp4d3JpeTdrcEFSem51VHh2WVkwbmFaQ19lWE9vbzNORHZScEhTeWMiLCJ0eXAiOiJhYWMtdGVybWluYWwtYXR0ZXN0YXRpb24rand0IiwieDVjIjpbIk1JSUJyakNDQVdDZ0F3SUJBZ0lVT2Nvb093VDhzUXZMeHFlWXhkeUJ4VzU0OWljd0JRWURLMlZ3TUNNeElUQWZCZ05WQkFNTUdFRkJReUJzYjJOaGJDQmtaWFpsYkc5d2JXVnVkQ0JEUVRBZUZ3MHlOakE1TWpRd016STFNREZhRncweU5qQTVNalV3TXpNd01ERmFNQUF3S2pBRkJnTXJaWEFESVFEbU0vRkplWXdUdGxEaTUyNVdxSG1BUzBCWUVzSmI2T2pCSTBjSGY2K2hDS09CeURDQnhUQU1CZ05WSFJNQkFmOEVBakFBTUE0R0ExVWREd0VCL3dRRUF3SUhnREFmQmdOVkhTTUVHREFXZ0JSZk00SjdWaGFsTXkvQUtaU2Q2VVdaalQzWVhUQWRCZ05WSFNVRUZqQVVCZ2dyQmdFRkJRY0RBZ1lJS3dZQkJRVUhBd0V3WlFZRFZSMFJBUUgvQkZzd1dZWlhjM0JwWm1abE9pOHZkRzUwTFRJelpqTmxZMkl5TFRGa09HSXRORGcwTXkxaVl6azNMVE13T1RobU5UWm1NekJtWkM1MFpXNWhiblJ6TG5OMFlXZGxMbU5oYzJOaFpHVmhkWFJvTG1SbGRpOWliMjlyYVc1bk1BVUdBeXRsY0FOQkFCcXl5bjZpaXIwL3p2Z1ZRZVBJencrTCtvbVJWM1Q5UU5ydlJpM0VMMnVsOStHem5sNWFFbDhDREtsQUI0a0RSemMybFAwQzM4YXA4Wi9XOWpHMTd3TT0iXX0.eyJhY3Rpb25fc3VtbWFyeSI6IntcImFtb3VudFwiOiA4MDAwLCBcImN1cnJlbmN5XCI6IFwiVVNEXCIsIFwiZGVwYXJ0dXJlXCI6IFwiMTIgTWF5XCIsIFwiZnJvbVwiOiBcIkF1c3RpblwiLCBcIm9yZGVyXCI6IFwiUE8gIzQxNDNcIiwgXCJwYXltZW50X3N0YXR1c1wiOiBcInVucGFpZFwiLCBcInJlc2VydmF0aW9uX2lkXCI6IFwic3ludGhldGljLXBvNDE0My0wYmFmMzQ1NTIyOGNcIiwgXCJzeW50aGV0aWNcIjogdHJ1ZSwgXCJ0b1wiOiBcIlNoYW5naGFpXCJ9IiwiaWF0IjoxNzkwMjIwOTAyLCJpc3MiOiJ0bnQtMjNmM2VjYjItMWQ4Yi00ODQzLWJjOTctMzA5OGY1NmYzMGZkIiwicm9vdF90b2tlbl9pZCI6IjU3NGZiOWJlMjZlYjUwMzEwYTQzNDhlYjBkZDE0NWQyZDNlMjg4Yjk2MGNlZDdiZTVkZjcwYWY2OGU2MzAwMjIiLCJzZXR0bGVtZW50X2lkIjoic3ludGhldGljLXBvNDE0My0wYmFmMzQ1NTIyOGMiLCJ0YXNrX3JlZiI6InBvNDE0My0wYmFmMzQ1NTIyOGMiLCJ0ZXJtaW5hbF9hZ2VudF9zdmlkIjoic3BpZmZlOi8vdG50LTIzZjNlY2IyLTFkOGItNDg0My1iYzk3LTMwOThmNTZmMzBmZC50ZW5hbnRzLnN0YWdlLmNhc2NhZGVhdXRoLmRldi9ib29raW5nIn0.izGtT3qyiobMyOTWiyczovY1kidfgY_WMd-pG7zh1N8e8ypEEYXvQqb9vr0JGopIBvDg9BrgWWWcnuKs0cqvCQ",
+        "agent_decision_action": "settle"
+      }
+    },
+    {
+      "application_decline": {
+        "root_token_id": "7b200b259c796f05de9dfdc8a3458609455e721e86d46f92aafc05aef2d3da79",
+        "token_id": "942c118eb05252f145bc29ac089cce43da46a63de107af60d00fd74774abacb3",
+        "task_ref": "po4143-10b8c646dcf0",
+        "role": "booking",
+        "payload": {
+          "departure": "12 May",
+          "from": "Austin",
+          "offer": 8000,
+          "order": "PO #4143",
+          "scenario": "fare-change",
+          "to": "Shanghai"
+        },
+        "decision": {
+          "action": "refuse",
+          "reason": "Fare changed to $9,500; no reservation was created."
+        }
+      },
+      "dispatch": {
+        "timestamp_unix_seconds": 1790220903,
+        "event_type": "dispatch",
+        "result": "success",
+        "root_token_id": "7b200b259c796f05de9dfdc8a3458609455e721e86d46f92aafc05aef2d3da79",
+        "token_id": "942c118eb05252f145bc29ac089cce43da46a63de107af60d00fd74774abacb3",
+        "parent_token_id": "8ac9de66a748d27a8fc222fd8457c2e62935b94c132ddc7573064b3ec6fd399c",
+        "hop_index": 2,
+        "creator_svid_hash": "2eb7bcebc17d218b856117ae63c6ac0b4dadbd1538b8f26e6773db645c215569",
+        "audience_hash": "305b1176dbea88cf22bd0ec07eda9b7d141918180461d942319bf4c770230dc5",
+        "caveat_audience": "spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking",
+        "tenant_id": "tnt-135f90ba-5922-4fa6-9a7d-61b763bfd662",
+        "actor_spiffe_id": "spiffe://tnt-135f90ba-5922-4fa6-9a7d-61b763bfd662.tenants.stage.cascadeauth.dev/trip-planner",
+        "caveat_predicates": "amount_max:8000,originator_reference:PO #4143,task_ref:po4143-10b8c646dcf0,valid_until:1790222703",
+        "destination": "tourfedia",
+        "task_ref": "po4143-10b8c646dcf0",
+        "agent_decision_action": "forward",
+        "latency_ms": 2.505
+      }
+    },
+    {
+      "root_token_id": "31aaef507f0eb1347550859e64aa4286bbe11ae10db0725aac77ccb219ff9dd6",
+      "task_ref": "po4143-e57c418ae09e",
+      "reservation": {
+        "amount": 9500,
+        "currency": "USD",
+        "departure": "12 May",
+        "from": "Austin",
+        "order": "PO #4143",
+        "payment_status": "unpaid",
+        "reservation_id": "synthetic-po4143-e57c418ae09e",
+        "synthetic": true,
+        "to": "Shanghai"
+      },
+      "terminal_attestation_verification": "verified",
+      "dispatch": {
+        "timestamp_unix_seconds": 1790220904,
+        "event_type": "dispatch",
+        "result": "success",
+        "root_token_id": "31aaef507f0eb1347550859e64aa4286bbe11ae10db0725aac77ccb219ff9dd6",
+        "token_id": "cfdc538d21e68c4359a80655d673941294c80a7d04400b5cb1f8afee942f1263",
+        "parent_token_id": "0eef2fb4509019501de6a8a5c84cc9650991b86f4a3959e5cf7a0f9210298170",
+        "hop_index": 2,
+        "creator_svid_hash": "2eb7bcebc17d218b856117ae63c6ac0b4dadbd1538b8f26e6773db645c215569",
+        "audience_hash": "305b1176dbea88cf22bd0ec07eda9b7d141918180461d942319bf4c770230dc5",
+        "caveat_audience": "spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking",
+        "tenant_id": "tnt-135f90ba-5922-4fa6-9a7d-61b763bfd662",
+        "actor_spiffe_id": "spiffe://tnt-135f90ba-5922-4fa6-9a7d-61b763bfd662.tenants.stage.cascadeauth.dev/trip-planner",
+        "caveat_predicates": "amount_max:9500,originator_reference:PO #4143,task_ref:po4143-e57c418ae09e,valid_until:1790222704",
+        "destination": "tourfedia",
+        "task_ref": "po4143-e57c418ae09e",
+        "terminal_attestation_verification": "verified",
+        "agent_decision_action": "forward",
+        "latency_ms": 2.873
+      },
+      "receive": {
+        "timestamp_unix_seconds": 1790220904,
+        "event_type": "receive",
+        "result": "success",
+        "root_token_id": "31aaef507f0eb1347550859e64aa4286bbe11ae10db0725aac77ccb219ff9dd6",
+        "token_id": "cfdc538d21e68c4359a80655d673941294c80a7d04400b5cb1f8afee942f1263",
+        "parent_token_id": "0eef2fb4509019501de6a8a5c84cc9650991b86f4a3959e5cf7a0f9210298170",
+        "hop_index": 2,
+        "creator_svid_hash": "2eb7bcebc17d218b856117ae63c6ac0b4dadbd1538b8f26e6773db645c215569",
+        "audience_hash": "305b1176dbea88cf22bd0ec07eda9b7d141918180461d942319bf4c770230dc5",
+        "caveat_audience": "spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking",
+        "tenant_id": "tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd",
+        "actor_spiffe_id": "spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking",
+        "presenter_spiffe_id": "spiffe://tnt-135f90ba-5922-4fa6-9a7d-61b763bfd662.tenants.stage.cascadeauth.dev/trip-planner",
+        "caveat_predicates": "amount_max:9500,originator_reference:PO #4143,task_ref:po4143-e57c418ae09e,valid_until:1790222704",
+        "task_ref": "po4143-e57c418ae09e",
+        "agent_decision_action": "settle",
+        "latency_ms": 1.84
+      },
+      "respond": {
+        "timestamp_unix_seconds": 1790220904,
+        "event_type": "respond",
+        "result": "success",
+        "root_token_id": "31aaef507f0eb1347550859e64aa4286bbe11ae10db0725aac77ccb219ff9dd6",
+        "token_id": "cfdc538d21e68c4359a80655d673941294c80a7d04400b5cb1f8afee942f1263",
+        "hop_index": 2,
+        "creator_svid_hash": "305b1176dbea88cf22bd0ec07eda9b7d141918180461d942319bf4c770230dc5",
+        "tenant_id": "tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd",
+        "actor_spiffe_id": "spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking",
+        "task_ref": "po4143-e57c418ae09e",
+        "terminal_attestation": "eyJhbGciOiJFZERTQSIsImtpZCI6IjRjWmp4d3JpeTdrcEFSem51VHh2WVkwbmFaQ19lWE9vbzNORHZScEhTeWMiLCJ0eXAiOiJhYWMtdGVybWluYWwtYXR0ZXN0YXRpb24rand0IiwieDVjIjpbIk1JSUJyakNDQVdDZ0F3SUJBZ0lVT2Nvb093VDhzUXZMeHFlWXhkeUJ4VzU0OWljd0JRWURLMlZ3TUNNeElUQWZCZ05WQkFNTUdFRkJReUJzYjJOaGJDQmtaWFpsYkc5d2JXVnVkQ0JEUVRBZUZ3MHlOakE1TWpRd016STFNREZhRncweU5qQTVNalV3TXpNd01ERmFNQUF3S2pBRkJnTXJaWEFESVFEbU0vRkplWXdUdGxEaTUyNVdxSG1BUzBCWUVzSmI2T2pCSTBjSGY2K2hDS09CeURDQnhUQU1CZ05WSFJNQkFmOEVBakFBTUE0R0ExVWREd0VCL3dRRUF3SUhnREFmQmdOVkhTTUVHREFXZ0JSZk00SjdWaGFsTXkvQUtaU2Q2VVdaalQzWVhUQWRCZ05WSFNVRUZqQVVCZ2dyQmdFRkJRY0RBZ1lJS3dZQkJRVUhBd0V3WlFZRFZSMFJBUUgvQkZzd1dZWlhjM0JwWm1abE9pOHZkRzUwTFRJelpqTmxZMkl5TFRGa09HSXRORGcwTXkxaVl6azNMVE13T1RobU5UWm1NekJtWkM1MFpXNWhiblJ6TG5OMFlXZGxMbU5oYzJOaFpHVmhkWFJvTG1SbGRpOWliMjlyYVc1bk1BVUdBeXRsY0FOQkFCcXl5bjZpaXIwL3p2Z1ZRZVBJencrTCtvbVJWM1Q5UU5ydlJpM0VMMnVsOStHem5sNWFFbDhDREtsQUI0a0RSemMybFAwQzM4YXA4Wi9XOWpHMTd3TT0iXX0.eyJhY3Rpb25fc3VtbWFyeSI6IntcImFtb3VudFwiOiA5NTAwLCBcImN1cnJlbmN5XCI6IFwiVVNEXCIsIFwiZGVwYXJ0dXJlXCI6IFwiMTIgTWF5XCIsIFwiZnJvbVwiOiBcIkF1c3RpblwiLCBcIm9yZGVyXCI6IFwiUE8gIzQxNDNcIiwgXCJwYXltZW50X3N0YXR1c1wiOiBcInVucGFpZFwiLCBcInJlc2VydmF0aW9uX2lkXCI6IFwic3ludGhldGljLXBvNDE0My1lNTdjNDE4YWUwOWVcIiwgXCJzeW50aGV0aWNcIjogdHJ1ZSwgXCJ0b1wiOiBcIlNoYW5naGFpXCJ9IiwiaWF0IjoxNzkwMjIwOTA0LCJpc3MiOiJ0bnQtMjNmM2VjYjItMWQ4Yi00ODQzLWJjOTctMzA5OGY1NmYzMGZkIiwicm9vdF90b2tlbl9pZCI6IjMxYWFlZjUwN2YwZWIxMzQ3NTUwODU5ZTY0YWE0Mjg2YmJlMTFhZTEwZGIwNzI1YWFjNzdjY2IyMTlmZjlkZDYiLCJzZXR0bGVtZW50X2lkIjoic3ludGhldGljLXBvNDE0My1lNTdjNDE4YWUwOWUiLCJ0YXNrX3JlZiI6InBvNDE0My1lNTdjNDE4YWUwOWUiLCJ0ZXJtaW5hbF9hZ2VudF9zdmlkIjoic3BpZmZlOi8vdG50LTIzZjNlY2IyLTFkOGItNDg0My1iYzk3LTMwOThmNTZmMzBmZC50ZW5hbnRzLnN0YWdlLmNhc2NhZGVhdXRoLmRldi9ib29raW5nIn0.ZvD8mInzUQQiRtUJJm5lD-lLxlrgzEIFKzTEqoqHPqdgLnfNxY4d-WeRyLJeMUJeNGjx2xD0dfpm9nWKjEQMAA",
+        "agent_decision_action": "settle"
+      }
+    },
+    {
+      "local_refusal": {
+        "timestamp_unix_seconds": 1790220916,
+        "event_type": "dispatch",
+        "result": "failure",
+        "root_token_id": "cebffcc1625ba561de082c40435a4f5aff7c411cf2eac43acf380c46fcad204e",
+        "tenant_id": "tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd",
+        "actor_spiffe_id": "spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking",
+        "task_ref": "po4143-ab328ade13ea",
+        "failure_code": "ERR_CHAIN_INVALID",
+        "failure_detail": "branch 1/1 (test_vantis): candidate delegation refused: caveat at hop 3 tries to widen amount_max from 8000 to 9500 \u2014 macaroon chains may only narrow, never widen",
+        "agent_decision_action": "forward"
+      }
+    },
+    {
+      "root_token_id": "bba3da80d3fcb329bbd8d344e38ab63093763cbcdce0b2f68a7f6103928f3fec",
+      "task_ref": "po4143-335fc083c936",
+      "reservation": {
+        "amount": 8000,
+        "currency": "USD",
+        "departure": "12 May",
+        "from": "Austin",
+        "order": "PO #4143",
+        "payment_status": "unpaid",
+        "reservation_id": "synthetic-po4143-335fc083c936",
+        "synthetic": true,
+        "to": "Shanghai"
+      },
+      "terminal_attestation_verification": "verified",
+      "dispatch": {
+        "timestamp_unix_seconds": 1790220935,
+        "event_type": "dispatch",
+        "result": "success",
+        "root_token_id": "bba3da80d3fcb329bbd8d344e38ab63093763cbcdce0b2f68a7f6103928f3fec",
+        "token_id": "0d46785e766b9e221c72a34750a8176266ffa8ba3a79c0aa16a723307f09ee8e",
+        "parent_token_id": "23f408fd629fcc7f4861d1ca6852b8ff35031169d6fe50bdf880162847d12b61",
+        "hop_index": 2,
+        "creator_svid_hash": "2eb7bcebc17d218b856117ae63c6ac0b4dadbd1538b8f26e6773db645c215569",
+        "audience_hash": "305b1176dbea88cf22bd0ec07eda9b7d141918180461d942319bf4c770230dc5",
+        "caveat_audience": "spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking",
+        "tenant_id": "tnt-135f90ba-5922-4fa6-9a7d-61b763bfd662",
+        "actor_spiffe_id": "spiffe://tnt-135f90ba-5922-4fa6-9a7d-61b763bfd662.tenants.stage.cascadeauth.dev/trip-planner",
+        "caveat_predicates": "amount_max:8000,originator_reference:PO #4143,task_ref:po4143-335fc083c936,valid_until:1790222735",
+        "destination": "tourfedia",
+        "task_ref": "po4143-335fc083c936",
+        "terminal_attestation_verification": "verified",
+        "agent_decision_action": "forward",
+        "latency_ms": 5.193
+      },
+      "receive": {
+        "timestamp_unix_seconds": 1790220935,
+        "event_type": "receive",
+        "result": "success",
+        "root_token_id": "bba3da80d3fcb329bbd8d344e38ab63093763cbcdce0b2f68a7f6103928f3fec",
+        "token_id": "0d46785e766b9e221c72a34750a8176266ffa8ba3a79c0aa16a723307f09ee8e",
+        "parent_token_id": "23f408fd629fcc7f4861d1ca6852b8ff35031169d6fe50bdf880162847d12b61",
+        "hop_index": 2,
+        "creator_svid_hash": "2eb7bcebc17d218b856117ae63c6ac0b4dadbd1538b8f26e6773db645c215569",
+        "audience_hash": "305b1176dbea88cf22bd0ec07eda9b7d141918180461d942319bf4c770230dc5",
+        "caveat_audience": "spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking",
+        "tenant_id": "tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd",
+        "actor_spiffe_id": "spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking",
+        "presenter_spiffe_id": "spiffe://tnt-135f90ba-5922-4fa6-9a7d-61b763bfd662.tenants.stage.cascadeauth.dev/trip-planner",
+        "caveat_predicates": "amount_max:8000,originator_reference:PO #4143,task_ref:po4143-335fc083c936,valid_until:1790222735",
+        "task_ref": "po4143-335fc083c936",
+        "agent_decision_action": "settle",
+        "latency_ms": 2.153
+      },
+      "respond": {
+        "timestamp_unix_seconds": 1790220935,
+        "event_type": "respond",
+        "result": "success",
+        "root_token_id": "bba3da80d3fcb329bbd8d344e38ab63093763cbcdce0b2f68a7f6103928f3fec",
+        "token_id": "0d46785e766b9e221c72a34750a8176266ffa8ba3a79c0aa16a723307f09ee8e",
+        "hop_index": 2,
+        "creator_svid_hash": "305b1176dbea88cf22bd0ec07eda9b7d141918180461d942319bf4c770230dc5",
+        "tenant_id": "tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd",
+        "actor_spiffe_id": "spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking",
+        "task_ref": "po4143-335fc083c936",
+        "terminal_attestation": "eyJhbGciOiJFZERTQSIsImtpZCI6IjRjWmp4d3JpeTdrcEFSem51VHh2WVkwbmFaQ19lWE9vbzNORHZScEhTeWMiLCJ0eXAiOiJhYWMtdGVybWluYWwtYXR0ZXN0YXRpb24rand0IiwieDVjIjpbIk1JSUJyakNDQVdDZ0F3SUJBZ0lVT2Nvb093VDhzUXZMeHFlWXhkeUJ4VzU0OWljd0JRWURLMlZ3TUNNeElUQWZCZ05WQkFNTUdFRkJReUJzYjJOaGJDQmtaWFpsYkc5d2JXVnVkQ0JEUVRBZUZ3MHlOakE1TWpRd016STFNREZhRncweU5qQTVNalV3TXpNd01ERmFNQUF3S2pBRkJnTXJaWEFESVFEbU0vRkplWXdUdGxEaTUyNVdxSG1BUzBCWUVzSmI2T2pCSTBjSGY2K2hDS09CeURDQnhUQU1CZ05WSFJNQkFmOEVBakFBTUE0R0ExVWREd0VCL3dRRUF3SUhnREFmQmdOVkhTTUVHREFXZ0JSZk00SjdWaGFsTXkvQUtaU2Q2VVdaalQzWVhUQWRCZ05WSFNVRUZqQVVCZ2dyQmdFRkJRY0RBZ1lJS3dZQkJRVUhBd0V3WlFZRFZSMFJBUUgvQkZzd1dZWlhjM0JwWm1abE9pOHZkRzUwTFRJelpqTmxZMkl5TFRGa09HSXRORGcwTXkxaVl6azNMVE13T1RobU5UWm1NekJtWkM1MFpXNWhiblJ6TG5OMFlXZGxMbU5oYzJOaFpHVmhkWFJvTG1SbGRpOWliMjlyYVc1bk1BVUdBeXRsY0FOQkFCcXl5bjZpaXIwL3p2Z1ZRZVBJencrTCtvbVJWM1Q5UU5ydlJpM0VMMnVsOStHem5sNWFFbDhDREtsQUI0a0RSemMybFAwQzM4YXA4Wi9XOWpHMTd3TT0iXX0.eyJhY3Rpb25fc3VtbWFyeSI6IntcImFtb3VudFwiOiA4MDAwLCBcImN1cnJlbmN5XCI6IFwiVVNEXCIsIFwiZGVwYXJ0dXJlXCI6IFwiMTIgTWF5XCIsIFwiZnJvbVwiOiBcIkF1c3RpblwiLCBcIm9yZGVyXCI6IFwiUE8gIzQxNDNcIiwgXCJwYXltZW50X3N0YXR1c1wiOiBcInVucGFpZFwiLCBcInJlc2VydmF0aW9uX2lkXCI6IFwic3ludGhldGljLXBvNDE0My0zMzVmYzA4M2M5MzZcIiwgXCJzeW50aGV0aWNcIjogdHJ1ZSwgXCJ0b1wiOiBcIlNoYW5naGFpXCJ9IiwiaWF0IjoxNzkwMjIwOTM1LCJpc3MiOiJ0bnQtMjNmM2VjYjItMWQ4Yi00ODQzLWJjOTctMzA5OGY1NmYzMGZkIiwicm9vdF90b2tlbl9pZCI6ImJiYTNkYTgwZDNmY2IzMjliYmQ4ZDM0NGUzOGFiNjMwOTM3NjNjYmNkY2UwYjJmNjhhN2Y2MTAzOTI4ZjNmZWMiLCJzZXR0bGVtZW50X2lkIjoic3ludGhldGljLXBvNDE0My0zMzVmYzA4M2M5MzYiLCJ0YXNrX3JlZiI6InBvNDE0My0zMzVmYzA4M2M5MzYiLCJ0ZXJtaW5hbF9hZ2VudF9zdmlkIjoic3BpZmZlOi8vdG50LTIzZjNlY2IyLTFkOGItNDg0My1iYzk3LTMwOThmNTZmMzBmZC50ZW5hbnRzLnN0YWdlLmNhc2NhZGVhdXRoLmRldi9ib29raW5nIn0.SSZWIZZX4_CqIxXhGQloU5CD7wYoaPlD4NyK29PnCuJ0WxaKgT3np27Vw6du3UbW2Sk8msK9CoInt2leu6-fAw",
+        "agent_decision_action": "settle"
+      }
+    },
+    {
+      "root_token_id": "9eefcf85f877687183908238db4d11aa76004ddeefa4883c4dec2863206e5f44",
+      "task_ref": "po4143-1177373336c0",
+      "reservation": {
+        "amount": 8000,
+        "currency": "USD",
+        "departure": "12 May",
+        "from": "Austin",
+        "order": "PO #4143",
+        "payment_status": "unpaid",
+        "reservation_id": "synthetic-po4143-1177373336c0",
+        "synthetic": true,
+        "to": "Shanghai"
+      },
+      "terminal_attestation_verification": "verified",
+      "dispatch": {
+        "timestamp_unix_seconds": 1790220947,
+        "event_type": "dispatch",
+        "result": "success",
+        "root_token_id": "9eefcf85f877687183908238db4d11aa76004ddeefa4883c4dec2863206e5f44",
+        "token_id": "61e42be540f2da9b769f967c72079258450a5b3ed8073c2b11a12b83cb18a821",
+        "parent_token_id": "d98e96147b9f6f2f9441572ac01ced7f6486e7c91fdcb4870ff2fde518fed784",
+        "hop_index": 2,
+        "creator_svid_hash": "2eb7bcebc17d218b856117ae63c6ac0b4dadbd1538b8f26e6773db645c215569",
+        "audience_hash": "305b1176dbea88cf22bd0ec07eda9b7d141918180461d942319bf4c770230dc5",
+        "caveat_audience": "spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking",
+        "tenant_id": "tnt-135f90ba-5922-4fa6-9a7d-61b763bfd662",
+        "actor_spiffe_id": "spiffe://tnt-135f90ba-5922-4fa6-9a7d-61b763bfd662.tenants.stage.cascadeauth.dev/trip-planner",
+        "caveat_predicates": "amount_max:8000,originator_reference:PO #4143,task_ref:po4143-1177373336c0,valid_until:1790222747",
+        "destination": "tourfedia",
+        "task_ref": "po4143-1177373336c0",
+        "terminal_attestation_verification": "verified",
+        "agent_decision_action": "forward",
+        "latency_ms": 7.135
+      },
+      "receive": {
+        "timestamp_unix_seconds": 1790220947,
+        "event_type": "receive",
+        "result": "success",
+        "root_token_id": "9eefcf85f877687183908238db4d11aa76004ddeefa4883c4dec2863206e5f44",
+        "token_id": "61e42be540f2da9b769f967c72079258450a5b3ed8073c2b11a12b83cb18a821",
+        "parent_token_id": "d98e96147b9f6f2f9441572ac01ced7f6486e7c91fdcb4870ff2fde518fed784",
+        "hop_index": 2,
+        "creator_svid_hash": "2eb7bcebc17d218b856117ae63c6ac0b4dadbd1538b8f26e6773db645c215569",
+        "audience_hash": "305b1176dbea88cf22bd0ec07eda9b7d141918180461d942319bf4c770230dc5",
+        "caveat_audience": "spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking",
+        "tenant_id": "tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd",
+        "actor_spiffe_id": "spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking",
+        "presenter_spiffe_id": "spiffe://tnt-135f90ba-5922-4fa6-9a7d-61b763bfd662.tenants.stage.cascadeauth.dev/trip-planner",
+        "caveat_predicates": "amount_max:8000,originator_reference:PO #4143,task_ref:po4143-1177373336c0,valid_until:1790222747",
+        "task_ref": "po4143-1177373336c0",
+        "agent_decision_action": "settle",
+        "latency_ms": 2.64
+      },
+      "respond": {
+        "timestamp_unix_seconds": 1790220947,
+        "event_type": "respond",
+        "result": "success",
+        "root_token_id": "9eefcf85f877687183908238db4d11aa76004ddeefa4883c4dec2863206e5f44",
+        "token_id": "61e42be540f2da9b769f967c72079258450a5b3ed8073c2b11a12b83cb18a821",
+        "hop_index": 2,
+        "creator_svid_hash": "305b1176dbea88cf22bd0ec07eda9b7d141918180461d942319bf4c770230dc5",
+        "tenant_id": "tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd",
+        "actor_spiffe_id": "spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking",
+        "task_ref": "po4143-1177373336c0",
+        "terminal_attestation": "eyJhbGciOiJFZERTQSIsImtpZCI6InoyR2N5RnpidVlUMHZBNE1FbE40ckd4RE5VM3AtQkhHNnFMeldwX1JrcjAiLCJ0eXAiOiJhYWMtdGVybWluYWwtYXR0ZXN0YXRpb24rand0IiwieDVjIjpbIk1JSUJyakNDQVdDZ0F3SUJBZ0lVRWNhSTZ5dTh3VGVpckdNMWgrV055WmR2YmdFd0JRWURLMlZ3TUNNeElUQWZCZ05WQkFNTUdFRkJReUJzYjJOaGJDQmtaWFpsYkc5d2JXVnVkQ0JEUVRBZUZ3MHlOakE1TWpRd016TXdNemRhRncweU5qQTVNalV3TXpNMU16ZGFNQUF3S2pBRkJnTXJaWEFESVFBMFlMd0JSYzFyUDBXZmlnNjlhWlo2bUFjcGgyQVU5WlVDRUxMZUVoMlF3YU9CeURDQnhUQU1CZ05WSFJNQkFmOEVBakFBTUE0R0ExVWREd0VCL3dRRUF3SUhnREFmQmdOVkhTTUVHREFXZ0JSZk00SjdWaGFsTXkvQUtaU2Q2VVdaalQzWVhUQWRCZ05WSFNVRUZqQVVCZ2dyQmdFRkJRY0RBZ1lJS3dZQkJRVUhBd0V3WlFZRFZSMFJBUUgvQkZzd1dZWlhjM0JwWm1abE9pOHZkRzUwTFRJelpqTmxZMkl5TFRGa09HSXRORGcwTXkxaVl6azNMVE13T1RobU5UWm1NekJtWkM1MFpXNWhiblJ6TG5OMFlXZGxMbU5oYzJOaFpHVmhkWFJvTG1SbGRpOWliMjlyYVc1bk1BVUdBeXRsY0FOQkFBSG1kVVFNSHhRN3owYXJsNk1OdGJzeVYrVnpETHNkbk5NcUk0Q1A1ZGZVS1BveCs3d1g2SzAvVnBNNVNNa04zazlXMjRIOUNVUkkrdUw5WktieFRBQT0iXX0.eyJhY3Rpb25fc3VtbWFyeSI6IntcImFtb3VudFwiOiA4MDAwLCBcImN1cnJlbmN5XCI6IFwiVVNEXCIsIFwiZGVwYXJ0dXJlXCI6IFwiMTIgTWF5XCIsIFwiZnJvbVwiOiBcIkF1c3RpblwiLCBcIm9yZGVyXCI6IFwiUE8gIzQxNDNcIiwgXCJwYXltZW50X3N0YXR1c1wiOiBcInVucGFpZFwiLCBcInJlc2VydmF0aW9uX2lkXCI6IFwic3ludGhldGljLXBvNDE0My0xMTc3MzczMzM2YzBcIiwgXCJzeW50aGV0aWNcIjogdHJ1ZSwgXCJ0b1wiOiBcIlNoYW5naGFpXCJ9IiwiaWF0IjoxNzkwMjIwOTQ3LCJpc3MiOiJ0bnQtMjNmM2VjYjItMWQ4Yi00ODQzLWJjOTctMzA5OGY1NmYzMGZkIiwicm9vdF90b2tlbl9pZCI6IjllZWZjZjg1Zjg3NzY4NzE4MzkwODIzOGRiNGQxMWFhNzYwMDRkZGVlZmE0ODgzYzRkZWMyODYzMjA2ZTVmNDQiLCJzZXR0bGVtZW50X2lkIjoic3ludGhldGljLXBvNDE0My0xMTc3MzczMzM2YzAiLCJ0YXNrX3JlZiI6InBvNDE0My0xMTc3MzczMzM2YzAiLCJ0ZXJtaW5hbF9hZ2VudF9zdmlkIjoic3BpZmZlOi8vdG50LTIzZjNlY2IyLTFkOGItNDg0My1iYzk3LTMwOThmNTZmMzBmZC50ZW5hbnRzLnN0YWdlLmNhc2NhZGVhdXRoLmRldi9ib29raW5nIn0.hnrDPDnRc80BRMp9mIh7x_J31TuP9wqUEXrbIl43C2Lfz3w9CXnRLoLvebuA-W6MK-rK1y73KMJkDnsqHSA9Cg",
+        "agent_decision_action": "settle"
+      }
+    },
+    {
+      "root_token_id": "33aa61a7b715e6ee533d0efa54357bc310f7f0f6dff4477df0cd42a39d2ff3af",
+      "task_ref": "po4143-a57d0f09c905",
+      "reservation": {
+        "amount": 8000,
+        "currency": "USD",
+        "departure": "12 May",
+        "from": "Austin",
+        "order": "PO #4143",
+        "payment_status": "unpaid",
+        "reservation_id": "synthetic-po4143-a57d0f09c905",
+        "synthetic": true,
+        "to": "Shanghai"
+      },
+      "terminal_attestation_verification": "verified",
+      "dispatch": {
+        "timestamp_unix_seconds": 1790220963,
+        "event_type": "dispatch",
+        "result": "success",
+        "root_token_id": "33aa61a7b715e6ee533d0efa54357bc310f7f0f6dff4477df0cd42a39d2ff3af",
+        "token_id": "95dc79a4b4a7932179c2c36277b203974cdd4e758150908db0bceb8c9b337cb2",
+        "parent_token_id": "1a40aca91ae4172e8fdda3ca2741ac96d268cbb5650f874d3493481888cb3ddf",
+        "hop_index": 2,
+        "creator_svid_hash": "2eb7bcebc17d218b856117ae63c6ac0b4dadbd1538b8f26e6773db645c215569",
+        "audience_hash": "305b1176dbea88cf22bd0ec07eda9b7d141918180461d942319bf4c770230dc5",
+        "caveat_audience": "spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking",
+        "tenant_id": "tnt-135f90ba-5922-4fa6-9a7d-61b763bfd662",
+        "actor_spiffe_id": "spiffe://tnt-135f90ba-5922-4fa6-9a7d-61b763bfd662.tenants.stage.cascadeauth.dev/trip-planner",
+        "caveat_predicates": "amount_max:8000,originator_reference:PO #4143,task_ref:po4143-a57d0f09c905,valid_until:1790222763",
+        "destination": "tourfedia",
+        "task_ref": "po4143-a57d0f09c905",
+        "terminal_attestation_verification": "verified",
+        "agent_decision_action": "forward",
+        "latency_ms": 6.678
+      },
+      "receive": {
+        "timestamp_unix_seconds": 1790220963,
+        "event_type": "receive",
+        "result": "success",
+        "root_token_id": "33aa61a7b715e6ee533d0efa54357bc310f7f0f6dff4477df0cd42a39d2ff3af",
+        "token_id": "95dc79a4b4a7932179c2c36277b203974cdd4e758150908db0bceb8c9b337cb2",
+        "parent_token_id": "1a40aca91ae4172e8fdda3ca2741ac96d268cbb5650f874d3493481888cb3ddf",
+        "hop_index": 2,
+        "creator_svid_hash": "2eb7bcebc17d218b856117ae63c6ac0b4dadbd1538b8f26e6773db645c215569",
+        "audience_hash": "305b1176dbea88cf22bd0ec07eda9b7d141918180461d942319bf4c770230dc5",
+        "caveat_audience": "spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking",
+        "tenant_id": "tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd",
+        "actor_spiffe_id": "spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking",
+        "presenter_spiffe_id": "spiffe://tnt-135f90ba-5922-4fa6-9a7d-61b763bfd662.tenants.stage.cascadeauth.dev/trip-planner",
+        "caveat_predicates": "amount_max:8000,originator_reference:PO #4143,task_ref:po4143-a57d0f09c905,valid_until:1790222763",
+        "task_ref": "po4143-a57d0f09c905",
+        "agent_decision_action": "settle",
+        "latency_ms": 2.975
+      },
+      "respond": {
+        "timestamp_unix_seconds": 1790220963,
+        "event_type": "respond",
+        "result": "success",
+        "root_token_id": "33aa61a7b715e6ee533d0efa54357bc310f7f0f6dff4477df0cd42a39d2ff3af",
+        "token_id": "95dc79a4b4a7932179c2c36277b203974cdd4e758150908db0bceb8c9b337cb2",
+        "hop_index": 2,
+        "creator_svid_hash": "305b1176dbea88cf22bd0ec07eda9b7d141918180461d942319bf4c770230dc5",
+        "tenant_id": "tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd",
+        "actor_spiffe_id": "spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking",
+        "task_ref": "po4143-a57d0f09c905",
+        "terminal_attestation": "eyJhbGciOiJFZERTQSIsImtpZCI6InI5VkZ3UlpqRThBdGtrTy1ydlBjMjczX3ZlRDhTem5ZZ1FTZF9kT3RtTHciLCJ0eXAiOiJhYWMtdGVybWluYWwtYXR0ZXN0YXRpb24rand0IiwieDVjIjpbIk1JSUJyakNDQVdDZ0F3SUJBZ0lVQXFEQlBsSFNPM0xVTnl4MFhJcmIvSFRxKzlVd0JRWURLMlZ3TUNNeElUQWZCZ05WQkFNTUdFRkJReUJzYjJOaGJDQmtaWFpsYkc5d2JXVnVkQ0JEUVRBZUZ3MHlOakE1TWpRd016TXdORGxhRncweU5qQTVNalV3TXpNMU5EbGFNQUF3S2pBRkJnTXJaWEFESVFEQU9hQlBJWjRycmh0NUVTOS9BU3JtbzRzbmRFUmJIcWo0TUZFMlFKcUZ2S09CeURDQnhUQU1CZ05WSFJNQkFmOEVBakFBTUE0R0ExVWREd0VCL3dRRUF3SUhnREFmQmdOVkhTTUVHREFXZ0JSektIMTI3WUQrVWFrOENsR01qS0QrdXdOQ3lUQWRCZ05WSFNVRUZqQVVCZ2dyQmdFRkJRY0RBZ1lJS3dZQkJRVUhBd0V3WlFZRFZSMFJBUUgvQkZzd1dZWlhjM0JwWm1abE9pOHZkRzUwTFRJelpqTmxZMkl5TFRGa09HSXRORGcwTXkxaVl6azNMVE13T1RobU5UWm1NekJtWkM1MFpXNWhiblJ6TG5OMFlXZGxMbU5oYzJOaFpHVmhkWFJvTG1SbGRpOWliMjlyYVc1bk1BVUdBeXRsY0FOQkFQcDNod1A2YjBBZld4MHdkSWFvQ2I1Mjk4YUlKUkVyUGk3WEJRRms2VzFQZ1dScTZEdXlkSVJvdHpMNEpwSmNuSHFya25ISCsrZ0p6dTU1TXVUckZ3OD0iXX0.eyJhY3Rpb25fc3VtbWFyeSI6IntcImFtb3VudFwiOiA4MDAwLCBcImN1cnJlbmN5XCI6IFwiVVNEXCIsIFwiZGVwYXJ0dXJlXCI6IFwiMTIgTWF5XCIsIFwiZnJvbVwiOiBcIkF1c3RpblwiLCBcIm9yZGVyXCI6IFwiUE8gIzQxNDNcIiwgXCJwYXltZW50X3N0YXR1c1wiOiBcInVucGFpZFwiLCBcInJlc2VydmF0aW9uX2lkXCI6IFwic3ludGhldGljLXBvNDE0My1hNTdkMGYwOWM5MDVcIiwgXCJzeW50aGV0aWNcIjogdHJ1ZSwgXCJ0b1wiOiBcIlNoYW5naGFpXCJ9IiwiaWF0IjoxNzkwMjIwOTYzLCJpc3MiOiJ0bnQtMjNmM2VjYjItMWQ4Yi00ODQzLWJjOTctMzA5OGY1NmYzMGZkIiwicm9vdF90b2tlbl9pZCI6IjMzYWE2MWE3YjcxNWU2ZWU1MzNkMGVmYTU0MzU3YmMzMTBmN2YwZjZkZmY0NDc3ZGYwY2Q0MmEzOWQyZmYzYWYiLCJzZXR0bGVtZW50X2lkIjoic3ludGhldGljLXBvNDE0My1hNTdkMGYwOWM5MDUiLCJ0YXNrX3JlZiI6InBvNDE0My1hNTdkMGYwOWM5MDUiLCJ0ZXJtaW5hbF9hZ2VudF9zdmlkIjoic3BpZmZlOi8vdG50LTIzZjNlY2IyLTFkOGItNDg0My1iYzk3LTMwOThmNTZmMzBmZC50ZW5hbnRzLnN0YWdlLmNhc2NhZGVhdXRoLmRldi9ib29raW5nIn0.oAO5XL1gX21uBKm9uvgbV-Ixiiu7utOzWGunw7GFwyqADoSllhuNEdMxTVl_okCzV0-ZdKCbiWF9683k0Ye7Ag",
+        "agent_decision_action": "settle"
+      }
+    },
+    {
+      "root_token_id": "618e9a74e3fb5b3d5c016e2a6fdc116eaacea59e22d7833668db9761d71bbd0c",
+      "task_ref": "po4143-75de7c6d5263",
+      "reservation": {
+        "amount": 8000,
+        "currency": "USD",
+        "departure": "12 May",
+        "from": "Austin",
+        "order": "PO #4143",
+        "payment_status": "unpaid",
+        "reservation_id": "synthetic-po4143-75de7c6d5263",
+        "synthetic": true,
+        "to": "Shanghai"
+      },
+      "terminal_attestation_verification": "verified",
+      "dispatch": {
+        "timestamp_unix_seconds": 1790220974,
+        "event_type": "dispatch",
+        "result": "success",
+        "root_token_id": "618e9a74e3fb5b3d5c016e2a6fdc116eaacea59e22d7833668db9761d71bbd0c",
+        "token_id": "1ca2ec3abdeb1da0d45d2d46f3958806329e2024c341d3cb3e5c576a7df179a3",
+        "parent_token_id": "178b2439b654df869fcee267dc79a71b92a8e51e014c583f7b966a125c530e4a",
+        "hop_index": 2,
+        "creator_svid_hash": "2eb7bcebc17d218b856117ae63c6ac0b4dadbd1538b8f26e6773db645c215569",
+        "audience_hash": "305b1176dbea88cf22bd0ec07eda9b7d141918180461d942319bf4c770230dc5",
+        "caveat_audience": "spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking",
+        "tenant_id": "tnt-135f90ba-5922-4fa6-9a7d-61b763bfd662",
+        "actor_spiffe_id": "spiffe://tnt-135f90ba-5922-4fa6-9a7d-61b763bfd662.tenants.stage.cascadeauth.dev/trip-planner",
+        "caveat_predicates": "amount_max:8000,originator_reference:PO #4143,task_ref:po4143-75de7c6d5263,valid_until:1790222774",
+        "destination": "tourfedia",
+        "task_ref": "po4143-75de7c6d5263",
+        "terminal_attestation_verification": "verified",
+        "agent_decision_action": "forward",
+        "latency_ms": 5.688
+      },
+      "receive": {
+        "timestamp_unix_seconds": 1790220974,
+        "event_type": "receive",
+        "result": "success",
+        "root_token_id": "618e9a74e3fb5b3d5c016e2a6fdc116eaacea59e22d7833668db9761d71bbd0c",
+        "token_id": "1ca2ec3abdeb1da0d45d2d46f3958806329e2024c341d3cb3e5c576a7df179a3",
+        "parent_token_id": "178b2439b654df869fcee267dc79a71b92a8e51e014c583f7b966a125c530e4a",
+        "hop_index": 2,
+        "creator_svid_hash": "2eb7bcebc17d218b856117ae63c6ac0b4dadbd1538b8f26e6773db645c215569",
+        "audience_hash": "305b1176dbea88cf22bd0ec07eda9b7d141918180461d942319bf4c770230dc5",
+        "caveat_audience": "spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking",
+        "tenant_id": "tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd",
+        "actor_spiffe_id": "spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking",
+        "presenter_spiffe_id": "spiffe://tnt-135f90ba-5922-4fa6-9a7d-61b763bfd662.tenants.stage.cascadeauth.dev/trip-planner",
+        "caveat_predicates": "amount_max:8000,originator_reference:PO #4143,task_ref:po4143-75de7c6d5263,valid_until:1790222774",
+        "task_ref": "po4143-75de7c6d5263",
+        "agent_decision_action": "settle",
+        "latency_ms": 2.481
+      },
+      "respond": {
+        "timestamp_unix_seconds": 1790220974,
+        "event_type": "respond",
+        "result": "success",
+        "root_token_id": "618e9a74e3fb5b3d5c016e2a6fdc116eaacea59e22d7833668db9761d71bbd0c",
+        "token_id": "1ca2ec3abdeb1da0d45d2d46f3958806329e2024c341d3cb3e5c576a7df179a3",
+        "hop_index": 2,
+        "creator_svid_hash": "305b1176dbea88cf22bd0ec07eda9b7d141918180461d942319bf4c770230dc5",
+        "tenant_id": "tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd",
+        "actor_spiffe_id": "spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking",
+        "task_ref": "po4143-75de7c6d5263",
+        "terminal_attestation": "eyJhbGciOiJFZERTQSIsImtpZCI6InI5VkZ3UlpqRThBdGtrTy1ydlBjMjczX3ZlRDhTem5ZZ1FTZF9kT3RtTHciLCJ0eXAiOiJhYWMtdGVybWluYWwtYXR0ZXN0YXRpb24rand0IiwieDVjIjpbIk1JSUJyakNDQVdDZ0F3SUJBZ0lVQXFEQlBsSFNPM0xVTnl4MFhJcmIvSFRxKzlVd0JRWURLMlZ3TUNNeElUQWZCZ05WQkFNTUdFRkJReUJzYjJOaGJDQmtaWFpsYkc5d2JXVnVkQ0JEUVRBZUZ3MHlOakE1TWpRd016TXdORGxhRncweU5qQTVNalV3TXpNMU5EbGFNQUF3S2pBRkJnTXJaWEFESVFEQU9hQlBJWjRycmh0NUVTOS9BU3JtbzRzbmRFUmJIcWo0TUZFMlFKcUZ2S09CeURDQnhUQU1CZ05WSFJNQkFmOEVBakFBTUE0R0ExVWREd0VCL3dRRUF3SUhnREFmQmdOVkhTTUVHREFXZ0JSektIMTI3WUQrVWFrOENsR01qS0QrdXdOQ3lUQWRCZ05WSFNVRUZqQVVCZ2dyQmdFRkJRY0RBZ1lJS3dZQkJRVUhBd0V3WlFZRFZSMFJBUUgvQkZzd1dZWlhjM0JwWm1abE9pOHZkRzUwTFRJelpqTmxZMkl5TFRGa09HSXRORGcwTXkxaVl6azNMVE13T1RobU5UWm1NekJtWkM1MFpXNWhiblJ6TG5OMFlXZGxMbU5oYzJOaFpHVmhkWFJvTG1SbGRpOWliMjlyYVc1bk1BVUdBeXRsY0FOQkFQcDNod1A2YjBBZld4MHdkSWFvQ2I1Mjk4YUlKUkVyUGk3WEJRRms2VzFQZ1dScTZEdXlkSVJvdHpMNEpwSmNuSHFya25ISCsrZ0p6dTU1TXVUckZ3OD0iXX0.eyJhY3Rpb25fc3VtbWFyeSI6IntcImFtb3VudFwiOiA4MDAwLCBcImN1cnJlbmN5XCI6IFwiVVNEXCIsIFwiZGVwYXJ0dXJlXCI6IFwiMTIgTWF5XCIsIFwiZnJvbVwiOiBcIkF1c3RpblwiLCBcIm9yZGVyXCI6IFwiUE8gIzQxNDNcIiwgXCJwYXltZW50X3N0YXR1c1wiOiBcInVucGFpZFwiLCBcInJlc2VydmF0aW9uX2lkXCI6IFwic3ludGhldGljLXBvNDE0My03NWRlN2M2ZDUyNjNcIiwgXCJzeW50aGV0aWNcIjogdHJ1ZSwgXCJ0b1wiOiBcIlNoYW5naGFpXCJ9IiwiaWF0IjoxNzkwMjIwOTc0LCJpc3MiOiJ0bnQtMjNmM2VjYjItMWQ4Yi00ODQzLWJjOTctMzA5OGY1NmYzMGZkIiwicm9vdF90b2tlbl9pZCI6IjYxOGU5YTc0ZTNmYjViM2Q1YzAxNmUyYTZmZGMxMTZlYWFjZWE1OWUyMmQ3ODMzNjY4ZGI5NzYxZDcxYmJkMGMiLCJzZXR0bGVtZW50X2lkIjoic3ludGhldGljLXBvNDE0My03NWRlN2M2ZDUyNjMiLCJ0YXNrX3JlZiI6InBvNDE0My03NWRlN2M2ZDUyNjMiLCJ0ZXJtaW5hbF9hZ2VudF9zdmlkIjoic3BpZmZlOi8vdG50LTIzZjNlY2IyLTFkOGItNDg0My1iYzk3LTMwOThmNTZmMzBmZC50ZW5hbnRzLnN0YWdlLmNhc2NhZGVhdXRoLmRldi9ib29raW5nIn0.M1aJLteFkzcvmf0B1lPI_hLA_CYx0BoNYImyqajNa6iFBFbXbwDa8_r3JttCryEbEwtyZ3cNa9_uyLT4L6ngDw",
+        "agent_decision_action": "settle"
+      }
+    },
+    {
+      "root_token_id": "8cdaf34f05eee24f7e2298eb94de6f35b3f780589dea924f28e836e1d7f3d653",
+      "task_ref": "po4143-361e5eea41da",
+      "reservation": {
+        "amount": 8000,
+        "currency": "USD",
+        "departure": "12 May",
+        "from": "Austin",
+        "order": "PO #4143",
+        "payment_status": "unpaid",
+        "reservation_id": "synthetic-po4143-361e5eea41da",
+        "synthetic": true,
+        "to": "Shanghai"
+      },
+      "terminal_attestation_verification": "verified",
+      "dispatch": {
+        "timestamp_unix_seconds": 1790220989,
+        "event_type": "dispatch",
+        "result": "success",
+        "root_token_id": "8cdaf34f05eee24f7e2298eb94de6f35b3f780589dea924f28e836e1d7f3d653",
+        "token_id": "a4f9c35a9a30a4baf7367f1b74e307585af3f73d4e01cc1a24ece5e430e8af9b",
+        "parent_token_id": "46d75943dc40079d53da433ef3754313812f51ddd830182ce18f4dbc847cb5fe",
+        "hop_index": 2,
+        "creator_svid_hash": "2eb7bcebc17d218b856117ae63c6ac0b4dadbd1538b8f26e6773db645c215569",
+        "audience_hash": "305b1176dbea88cf22bd0ec07eda9b7d141918180461d942319bf4c770230dc5",
+        "caveat_audience": "spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking",
+        "tenant_id": "tnt-135f90ba-5922-4fa6-9a7d-61b763bfd662",
+        "actor_spiffe_id": "spiffe://tnt-135f90ba-5922-4fa6-9a7d-61b763bfd662.tenants.stage.cascadeauth.dev/trip-planner",
+        "caveat_predicates": "amount_max:8000,originator_reference:PO #4143,task_ref:po4143-361e5eea41da,valid_until:1790222789",
+        "destination": "tourfedia",
+        "task_ref": "po4143-361e5eea41da",
+        "terminal_attestation_verification": "verified",
+        "agent_decision_action": "forward",
+        "latency_ms": 7.274
+      },
+      "receive": {
+        "timestamp_unix_seconds": 1790220989,
+        "event_type": "receive",
+        "result": "success",
+        "root_token_id": "8cdaf34f05eee24f7e2298eb94de6f35b3f780589dea924f28e836e1d7f3d653",
+        "token_id": "a4f9c35a9a30a4baf7367f1b74e307585af3f73d4e01cc1a24ece5e430e8af9b",
+        "parent_token_id": "46d75943dc40079d53da433ef3754313812f51ddd830182ce18f4dbc847cb5fe",
+        "hop_index": 2,
+        "creator_svid_hash": "2eb7bcebc17d218b856117ae63c6ac0b4dadbd1538b8f26e6773db645c215569",
+        "audience_hash": "305b1176dbea88cf22bd0ec07eda9b7d141918180461d942319bf4c770230dc5",
+        "caveat_audience": "spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking",
+        "tenant_id": "tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd",
+        "actor_spiffe_id": "spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking",
+        "presenter_spiffe_id": "spiffe://tnt-135f90ba-5922-4fa6-9a7d-61b763bfd662.tenants.stage.cascadeauth.dev/trip-planner",
+        "caveat_predicates": "amount_max:8000,originator_reference:PO #4143,task_ref:po4143-361e5eea41da,valid_until:1790222789",
+        "task_ref": "po4143-361e5eea41da",
+        "agent_decision_action": "settle",
+        "latency_ms": 2.725
+      },
+      "respond": {
+        "timestamp_unix_seconds": 1790220989,
+        "event_type": "respond",
+        "result": "success",
+        "root_token_id": "8cdaf34f05eee24f7e2298eb94de6f35b3f780589dea924f28e836e1d7f3d653",
+        "token_id": "a4f9c35a9a30a4baf7367f1b74e307585af3f73d4e01cc1a24ece5e430e8af9b",
+        "hop_index": 2,
+        "creator_svid_hash": "305b1176dbea88cf22bd0ec07eda9b7d141918180461d942319bf4c770230dc5",
+        "tenant_id": "tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd",
+        "actor_spiffe_id": "spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking",
+        "task_ref": "po4143-361e5eea41da",
+        "terminal_attestation": "eyJhbGciOiJFZERTQSIsImtpZCI6InI5VkZ3UlpqRThBdGtrTy1ydlBjMjczX3ZlRDhTem5ZZ1FTZF9kT3RtTHciLCJ0eXAiOiJhYWMtdGVybWluYWwtYXR0ZXN0YXRpb24rand0IiwieDVjIjpbIk1JSUJyakNDQVdDZ0F3SUJBZ0lVQXFEQlBsSFNPM0xVTnl4MFhJcmIvSFRxKzlVd0JRWURLMlZ3TUNNeElUQWZCZ05WQkFNTUdFRkJReUJzYjJOaGJDQmtaWFpsYkc5d2JXVnVkQ0JEUVRBZUZ3MHlOakE1TWpRd016TXdORGxhRncweU5qQTVNalV3TXpNMU5EbGFNQUF3S2pBRkJnTXJaWEFESVFEQU9hQlBJWjRycmh0NUVTOS9BU3JtbzRzbmRFUmJIcWo0TUZFMlFKcUZ2S09CeURDQnhUQU1CZ05WSFJNQkFmOEVBakFBTUE0R0ExVWREd0VCL3dRRUF3SUhnREFmQmdOVkhTTUVHREFXZ0JSektIMTI3WUQrVWFrOENsR01qS0QrdXdOQ3lUQWRCZ05WSFNVRUZqQVVCZ2dyQmdFRkJRY0RBZ1lJS3dZQkJRVUhBd0V3WlFZRFZSMFJBUUgvQkZzd1dZWlhjM0JwWm1abE9pOHZkRzUwTFRJelpqTmxZMkl5TFRGa09HSXRORGcwTXkxaVl6azNMVE13T1RobU5UWm1NekJtWkM1MFpXNWhiblJ6TG5OMFlXZGxMbU5oYzJOaFpHVmhkWFJvTG1SbGRpOWliMjlyYVc1bk1BVUdBeXRsY0FOQkFQcDNod1A2YjBBZld4MHdkSWFvQ2I1Mjk4YUlKUkVyUGk3WEJRRms2VzFQZ1dScTZEdXlkSVJvdHpMNEpwSmNuSHFya25ISCsrZ0p6dTU1TXVUckZ3OD0iXX0.eyJhY3Rpb25fc3VtbWFyeSI6IntcImFtb3VudFwiOiA4MDAwLCBcImN1cnJlbmN5XCI6IFwiVVNEXCIsIFwiZGVwYXJ0dXJlXCI6IFwiMTIgTWF5XCIsIFwiZnJvbVwiOiBcIkF1c3RpblwiLCBcIm9yZGVyXCI6IFwiUE8gIzQxNDNcIiwgXCJwYXltZW50X3N0YXR1c1wiOiBcInVucGFpZFwiLCBcInJlc2VydmF0aW9uX2lkXCI6IFwic3ludGhldGljLXBvNDE0My0zNjFlNWVlYTQxZGFcIiwgXCJzeW50aGV0aWNcIjogdHJ1ZSwgXCJ0b1wiOiBcIlNoYW5naGFpXCJ9IiwiaWF0IjoxNzkwMjIwOTg5LCJpc3MiOiJ0bnQtMjNmM2VjYjItMWQ4Yi00ODQzLWJjOTctMzA5OGY1NmYzMGZkIiwicm9vdF90b2tlbl9pZCI6IjhjZGFmMzRmMDVlZWUyNGY3ZTIyOThlYjk0ZGU2ZjM1YjNmNzgwNTg5ZGVhOTI0ZjI4ZTgzNmUxZDdmM2Q2NTMiLCJzZXR0bGVtZW50X2lkIjoic3ludGhldGljLXBvNDE0My0zNjFlNWVlYTQxZGEiLCJ0YXNrX3JlZiI6InBvNDE0My0zNjFlNWVlYTQxZGEiLCJ0ZXJtaW5hbF9hZ2VudF9zdmlkIjoic3BpZmZlOi8vdG50LTIzZjNlY2IyLTFkOGItNDg0My1iYzk3LTMwOThmNTZmMzBmZC50ZW5hbnRzLnN0YWdlLmNhc2NhZGVhdXRoLmRldi9ib29raW5nIn0.wtjaTwmw-2OXOY7yiwZPyV--LeAeRZlpcHrpoqAOW2ufdZ8wa2iG-pRLnL5iZQ6fe_ZLNjUsQy7f9RIcEZUTCg",
+        "agent_decision_action": "settle"
+      }
+    },
+    {
+      "root_token_id": "e16679bcdc9ec30b83035864d133e5f63c3872e678e0e1cd07aadb723c155d5d",
+      "task_ref": "po4143-eac69711ccf1",
+      "reservation": {
+        "amount": 8000,
+        "currency": "USD",
+        "departure": "12 May",
+        "from": "Austin",
+        "order": "PO #4143",
+        "payment_status": "unpaid",
+        "reservation_id": "synthetic-po4143-eac69711ccf1",
+        "synthetic": true,
+        "to": "Shanghai"
+      },
+      "terminal_attestation_verification": "verified",
+      "dispatch": {
+        "timestamp_unix_seconds": 1790221002,
+        "event_type": "dispatch",
+        "result": "success",
+        "root_token_id": "e16679bcdc9ec30b83035864d133e5f63c3872e678e0e1cd07aadb723c155d5d",
+        "token_id": "98d27e48a3e243eef04d026776b3c22c055a976e74bae31b35d12fe5b060d6fa",
+        "parent_token_id": "43580bb15c05cf18d99e5c8e42e082bb27edbd09b04f03da4fe3f4bfb6897091",
+        "hop_index": 2,
+        "creator_svid_hash": "2eb7bcebc17d218b856117ae63c6ac0b4dadbd1538b8f26e6773db645c215569",
+        "audience_hash": "305b1176dbea88cf22bd0ec07eda9b7d141918180461d942319bf4c770230dc5",
+        "caveat_audience": "spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking",
+        "tenant_id": "tnt-135f90ba-5922-4fa6-9a7d-61b763bfd662",
+        "actor_spiffe_id": "spiffe://tnt-135f90ba-5922-4fa6-9a7d-61b763bfd662.tenants.stage.cascadeauth.dev/trip-planner",
+        "caveat_predicates": "amount_max:8000,originator_reference:PO #4143,task_ref:po4143-eac69711ccf1,valid_until:1790222802",
+        "destination": "tourfedia",
+        "task_ref": "po4143-eac69711ccf1",
+        "terminal_attestation_verification": "verified",
+        "agent_decision_action": "forward",
+        "latency_ms": 6.731
+      },
+      "receive": {
+        "timestamp_unix_seconds": 1790221002,
+        "event_type": "receive",
+        "result": "success",
+        "root_token_id": "e16679bcdc9ec30b83035864d133e5f63c3872e678e0e1cd07aadb723c155d5d",
+        "token_id": "98d27e48a3e243eef04d026776b3c22c055a976e74bae31b35d12fe5b060d6fa",
+        "parent_token_id": "43580bb15c05cf18d99e5c8e42e082bb27edbd09b04f03da4fe3f4bfb6897091",
+        "hop_index": 2,
+        "creator_svid_hash": "2eb7bcebc17d218b856117ae63c6ac0b4dadbd1538b8f26e6773db645c215569",
+        "audience_hash": "305b1176dbea88cf22bd0ec07eda9b7d141918180461d942319bf4c770230dc5",
+        "caveat_audience": "spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking",
+        "tenant_id": "tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd",
+        "actor_spiffe_id": "spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking",
+        "presenter_spiffe_id": "spiffe://tnt-135f90ba-5922-4fa6-9a7d-61b763bfd662.tenants.stage.cascadeauth.dev/trip-planner",
+        "caveat_predicates": "amount_max:8000,originator_reference:PO #4143,task_ref:po4143-eac69711ccf1,valid_until:1790222802",
+        "task_ref": "po4143-eac69711ccf1",
+        "agent_decision_action": "settle",
+        "latency_ms": 2.874
+      },
+      "respond": {
+        "timestamp_unix_seconds": 1790221002,
+        "event_type": "respond",
+        "result": "success",
+        "root_token_id": "e16679bcdc9ec30b83035864d133e5f63c3872e678e0e1cd07aadb723c155d5d",
+        "token_id": "98d27e48a3e243eef04d026776b3c22c055a976e74bae31b35d12fe5b060d6fa",
+        "hop_index": 2,
+        "creator_svid_hash": "305b1176dbea88cf22bd0ec07eda9b7d141918180461d942319bf4c770230dc5",
+        "tenant_id": "tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd",
+        "actor_spiffe_id": "spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking",
+        "task_ref": "po4143-eac69711ccf1",
+        "terminal_attestation": "eyJhbGciOiJFZERTQSIsImtpZCI6InI5VkZ3UlpqRThBdGtrTy1ydlBjMjczX3ZlRDhTem5ZZ1FTZF9kT3RtTHciLCJ0eXAiOiJhYWMtdGVybWluYWwtYXR0ZXN0YXRpb24rand0IiwieDVjIjpbIk1JSUJyakNDQVdDZ0F3SUJBZ0lVQXFEQlBsSFNPM0xVTnl4MFhJcmIvSFRxKzlVd0JRWURLMlZ3TUNNeElUQWZCZ05WQkFNTUdFRkJReUJzYjJOaGJDQmtaWFpsYkc5d2JXVnVkQ0JEUVRBZUZ3MHlOakE1TWpRd016TXdORGxhRncweU5qQTVNalV3TXpNMU5EbGFNQUF3S2pBRkJnTXJaWEFESVFEQU9hQlBJWjRycmh0NUVTOS9BU3JtbzRzbmRFUmJIcWo0TUZFMlFKcUZ2S09CeURDQnhUQU1CZ05WSFJNQkFmOEVBakFBTUE0R0ExVWREd0VCL3dRRUF3SUhnREFmQmdOVkhTTUVHREFXZ0JSektIMTI3WUQrVWFrOENsR01qS0QrdXdOQ3lUQWRCZ05WSFNVRUZqQVVCZ2dyQmdFRkJRY0RBZ1lJS3dZQkJRVUhBd0V3WlFZRFZSMFJBUUgvQkZzd1dZWlhjM0JwWm1abE9pOHZkRzUwTFRJelpqTmxZMkl5TFRGa09HSXRORGcwTXkxaVl6azNMVE13T1RobU5UWm1NekJtWkM1MFpXNWhiblJ6TG5OMFlXZGxMbU5oYzJOaFpHVmhkWFJvTG1SbGRpOWliMjlyYVc1bk1BVUdBeXRsY0FOQkFQcDNod1A2YjBBZld4MHdkSWFvQ2I1Mjk4YUlKUkVyUGk3WEJRRms2VzFQZ1dScTZEdXlkSVJvdHpMNEpwSmNuSHFya25ISCsrZ0p6dTU1TXVUckZ3OD0iXX0.eyJhY3Rpb25fc3VtbWFyeSI6IntcImFtb3VudFwiOiA4MDAwLCBcImN1cnJlbmN5XCI6IFwiVVNEXCIsIFwiZGVwYXJ0dXJlXCI6IFwiMTIgTWF5XCIsIFwiZnJvbVwiOiBcIkF1c3RpblwiLCBcIm9yZGVyXCI6IFwiUE8gIzQxNDNcIiwgXCJwYXltZW50X3N0YXR1c1wiOiBcInVucGFpZFwiLCBcInJlc2VydmF0aW9uX2lkXCI6IFwic3ludGhldGljLXBvNDE0My1lYWM2OTcxMWNjZjFcIiwgXCJzeW50aGV0aWNcIjogdHJ1ZSwgXCJ0b1wiOiBcIlNoYW5naGFpXCJ9IiwiaWF0IjoxNzkwMjIxMDAyLCJpc3MiOiJ0bnQtMjNmM2VjYjItMWQ4Yi00ODQzLWJjOTctMzA5OGY1NmYzMGZkIiwicm9vdF90b2tlbl9pZCI6ImUxNjY3OWJjZGM5ZWMzMGI4MzAzNTg2NGQxMzNlNWY2M2MzODcyZTY3OGUwZTFjZDA3YWFkYjcyM2MxNTVkNWQiLCJzZXR0bGVtZW50X2lkIjoic3ludGhldGljLXBvNDE0My1lYWM2OTcxMWNjZjEiLCJ0YXNrX3JlZiI6InBvNDE0My1lYWM2OTcxMWNjZjEiLCJ0ZXJtaW5hbF9hZ2VudF9zdmlkIjoic3BpZmZlOi8vdG50LTIzZjNlY2IyLTFkOGItNDg0My1iYzk3LTMwOThmNTZmMzBmZC50ZW5hbnRzLnN0YWdlLmNhc2NhZGVhdXRoLmRldi9ib29raW5nIn0.qw1BVa5ILqEdWB0vWjgjxHV_4QvLsoUUkxTHq_JjsAVuAX-TuwMDhF-uZL6HVywIK8FN5bNSwJRZh1kG4qO_DQ",
+        "agent_decision_action": "settle"
+      }
+    },
+    {
+      "root_token_id": "d1a84bdd9082ce4fb7d97e1b9f7b6a29906039cb61eee6b199a05089d894e181",
+      "task_ref": "po4143-3cc6668e07c5",
+      "reservation": {
+        "amount": 8000,
+        "currency": "USD",
+        "departure": "12 May",
+        "from": "Austin",
+        "order": "PO #4143",
+        "payment_status": "unpaid",
+        "reservation_id": "synthetic-po4143-3cc6668e07c5",
+        "synthetic": true,
+        "to": "Shanghai"
+      },
+      "terminal_attestation_verification": "verified",
+      "dispatch": {
+        "timestamp_unix_seconds": 1790221015,
+        "event_type": "dispatch",
+        "result": "success",
+        "root_token_id": "d1a84bdd9082ce4fb7d97e1b9f7b6a29906039cb61eee6b199a05089d894e181",
+        "token_id": "295e897dd314d092f32e1f3d1b2ce4777ffe3772a59cbcceff55e4065df3ec2f",
+        "parent_token_id": "75ec8ab1818cef7442e4c3cb0546a0061b1b4a1f04162145e79458e00597fda8",
+        "hop_index": 2,
+        "creator_svid_hash": "2eb7bcebc17d218b856117ae63c6ac0b4dadbd1538b8f26e6773db645c215569",
+        "audience_hash": "305b1176dbea88cf22bd0ec07eda9b7d141918180461d942319bf4c770230dc5",
+        "caveat_audience": "spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking",
+        "tenant_id": "tnt-135f90ba-5922-4fa6-9a7d-61b763bfd662",
+        "actor_spiffe_id": "spiffe://tnt-135f90ba-5922-4fa6-9a7d-61b763bfd662.tenants.stage.cascadeauth.dev/trip-planner",
+        "caveat_predicates": "amount_max:8000,originator_reference:PO #4143,task_ref:po4143-3cc6668e07c5,valid_until:1790222815",
+        "destination": "tourfedia",
+        "task_ref": "po4143-3cc6668e07c5",
+        "terminal_attestation_verification": "verified",
+        "agent_decision_action": "forward",
+        "latency_ms": 5.624
+      },
+      "receive": {
+        "timestamp_unix_seconds": 1790221015,
+        "event_type": "receive",
+        "result": "success",
+        "root_token_id": "d1a84bdd9082ce4fb7d97e1b9f7b6a29906039cb61eee6b199a05089d894e181",
+        "token_id": "295e897dd314d092f32e1f3d1b2ce4777ffe3772a59cbcceff55e4065df3ec2f",
+        "parent_token_id": "75ec8ab1818cef7442e4c3cb0546a0061b1b4a1f04162145e79458e00597fda8",
+        "hop_index": 2,
+        "creator_svid_hash": "2eb7bcebc17d218b856117ae63c6ac0b4dadbd1538b8f26e6773db645c215569",
+        "audience_hash": "305b1176dbea88cf22bd0ec07eda9b7d141918180461d942319bf4c770230dc5",
+        "caveat_audience": "spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking",
+        "tenant_id": "tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd",
+        "actor_spiffe_id": "spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking",
+        "presenter_spiffe_id": "spiffe://tnt-135f90ba-5922-4fa6-9a7d-61b763bfd662.tenants.stage.cascadeauth.dev/trip-planner",
+        "caveat_predicates": "amount_max:8000,originator_reference:PO #4143,task_ref:po4143-3cc6668e07c5,valid_until:1790222815",
+        "task_ref": "po4143-3cc6668e07c5",
+        "agent_decision_action": "settle",
+        "latency_ms": 2.364
+      },
+      "respond": {
+        "timestamp_unix_seconds": 1790221015,
+        "event_type": "respond",
+        "result": "success",
+        "root_token_id": "d1a84bdd9082ce4fb7d97e1b9f7b6a29906039cb61eee6b199a05089d894e181",
+        "token_id": "295e897dd314d092f32e1f3d1b2ce4777ffe3772a59cbcceff55e4065df3ec2f",
+        "hop_index": 2,
+        "creator_svid_hash": "305b1176dbea88cf22bd0ec07eda9b7d141918180461d942319bf4c770230dc5",
+        "tenant_id": "tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd",
+        "actor_spiffe_id": "spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking",
+        "task_ref": "po4143-3cc6668e07c5",
+        "terminal_attestation": "eyJhbGciOiJFZERTQSIsImtpZCI6Ijllc2NzRi1Hd1BmYkt0RXVIWUNyNWxHNTJxakU5R0J3bk9OY3l0YXRhcW8iLCJ0eXAiOiJhYWMtdGVybWluYWwtYXR0ZXN0YXRpb24rand0IiwieDVjIjpbIk1JSUJyakNDQVdDZ0F3SUJBZ0lVUVlydGpnZkVSNWVvWHJGanE0RndudzlGeURZd0JRWURLMlZ3TUNNeElUQWZCZ05WQkFNTUdFRkJReUJzYjJOaGJDQmtaWFpsYkc5d2JXVnVkQ0JEUVRBZUZ3MHlOakE1TWpRd016TXhORFJhRncweU5qQTVNalV3TXpNMk5EUmFNQUF3S2pBRkJnTXJaWEFESVFDcUs5NHZZeWVvNUZLbmtuaCt4bGlLMjIyWjhQTW1KTVdLcWZ6TU1ldUdkcU9CeURDQnhUQU1CZ05WSFJNQkFmOEVBakFBTUE0R0ExVWREd0VCL3dRRUF3SUhnREFmQmdOVkhTTUVHREFXZ0JSektIMTI3WUQrVWFrOENsR01qS0QrdXdOQ3lUQWRCZ05WSFNVRUZqQVVCZ2dyQmdFRkJRY0RBZ1lJS3dZQkJRVUhBd0V3WlFZRFZSMFJBUUgvQkZzd1dZWlhjM0JwWm1abE9pOHZkRzUwTFRJelpqTmxZMkl5TFRGa09HSXRORGcwTXkxaVl6azNMVE13T1RobU5UWm1NekJtWkM1MFpXNWhiblJ6TG5OMFlXZGxMbU5oYzJOaFpHVmhkWFJvTG1SbGRpOWliMjlyYVc1bk1BVUdBeXRsY0FOQkFMRjJnSmRoM0g4WkppZXdNcjFUd3dxaVZOUDFUVmxUdnJDa0pqTnZuUGg3OEZGSUxGbElZMklhQ3c5NU5oM1ZNUnNXNC9Ib0h1eU1XREZBMm94cGlnVT0iXX0.eyJhY3Rpb25fc3VtbWFyeSI6IntcImFtb3VudFwiOiA4MDAwLCBcImN1cnJlbmN5XCI6IFwiVVNEXCIsIFwiZGVwYXJ0dXJlXCI6IFwiMTIgTWF5XCIsIFwiZnJvbVwiOiBcIkF1c3RpblwiLCBcIm9yZGVyXCI6IFwiUE8gIzQxNDNcIiwgXCJwYXltZW50X3N0YXR1c1wiOiBcInVucGFpZFwiLCBcInJlc2VydmF0aW9uX2lkXCI6IFwic3ludGhldGljLXBvNDE0My0zY2M2NjY4ZTA3YzVcIiwgXCJzeW50aGV0aWNcIjogdHJ1ZSwgXCJ0b1wiOiBcIlNoYW5naGFpXCJ9IiwiaWF0IjoxNzkwMjIxMDE1LCJpc3MiOiJ0bnQtMjNmM2VjYjItMWQ4Yi00ODQzLWJjOTctMzA5OGY1NmYzMGZkIiwicm9vdF90b2tlbl9pZCI6ImQxYTg0YmRkOTA4MmNlNGZiN2Q5N2UxYjlmN2I2YTI5OTA2MDM5Y2I2MWVlZTZiMTk5YTA1MDg5ZDg5NGUxODEiLCJzZXR0bGVtZW50X2lkIjoic3ludGhldGljLXBvNDE0My0zY2M2NjY4ZTA3YzUiLCJ0YXNrX3JlZiI6InBvNDE0My0zY2M2NjY4ZTA3YzUiLCJ0ZXJtaW5hbF9hZ2VudF9zdmlkIjoic3BpZmZlOi8vdG50LTIzZjNlY2IyLTFkOGItNDg0My1iYzk3LTMwOThmNTZmMzBmZC50ZW5hbnRzLnN0YWdlLmNhc2NhZGVhdXRoLmRldi9ib29raW5nIn0.6Bjyrjp84ztaTg41erMZdIwWeOGo3Jo8skASBg9XtuVx3B_guZq3tNzvXdgiNTAEJTU3qHsT4ifCJghzTYDIDg",
+        "agent_decision_action": "settle"
+      }
+    },
+    {
+      "root_token_id": "02b9a006481974a22e6ca36b16fb318aa40a6c037c42af33ab2e970e472d4868",
+      "task_ref": "po4143-39f7c918fd15",
+      "reservation": {
+        "amount": 8000,
+        "currency": "USD",
+        "departure": "12 May",
+        "from": "Austin",
+        "order": "PO #4143",
+        "payment_status": "unpaid",
+        "reservation_id": "synthetic-po4143-39f7c918fd15",
+        "synthetic": true,
+        "to": "Shanghai"
+      },
+      "terminal_attestation_verification": "verified",
+      "dispatch": {
+        "timestamp_unix_seconds": 1790221030,
+        "event_type": "dispatch",
+        "result": "success",
+        "root_token_id": "02b9a006481974a22e6ca36b16fb318aa40a6c037c42af33ab2e970e472d4868",
+        "token_id": "87412720fb91bc9ddc6c8e419ac4456a7b35c89737fa0697a20ea3c398d8d6ed",
+        "parent_token_id": "7829cb9bae868ef9026804a43035a920495c567bfe1268b32cbc52432eaf0353",
+        "hop_index": 2,
+        "creator_svid_hash": "2eb7bcebc17d218b856117ae63c6ac0b4dadbd1538b8f26e6773db645c215569",
+        "audience_hash": "305b1176dbea88cf22bd0ec07eda9b7d141918180461d942319bf4c770230dc5",
+        "caveat_audience": "spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking",
+        "tenant_id": "tnt-135f90ba-5922-4fa6-9a7d-61b763bfd662",
+        "actor_spiffe_id": "spiffe://tnt-135f90ba-5922-4fa6-9a7d-61b763bfd662.tenants.stage.cascadeauth.dev/trip-planner",
+        "caveat_predicates": "amount_max:8000,originator_reference:PO #4143,task_ref:po4143-39f7c918fd15,valid_until:1790222830",
+        "destination": "tourfedia",
+        "task_ref": "po4143-39f7c918fd15",
+        "terminal_attestation_verification": "verified",
+        "agent_decision_action": "forward",
+        "latency_ms": 5.411
+      },
+      "receive": {
+        "timestamp_unix_seconds": 1790221030,
+        "event_type": "receive",
+        "result": "success",
+        "root_token_id": "02b9a006481974a22e6ca36b16fb318aa40a6c037c42af33ab2e970e472d4868",
+        "token_id": "87412720fb91bc9ddc6c8e419ac4456a7b35c89737fa0697a20ea3c398d8d6ed",
+        "parent_token_id": "7829cb9bae868ef9026804a43035a920495c567bfe1268b32cbc52432eaf0353",
+        "hop_index": 2,
+        "creator_svid_hash": "2eb7bcebc17d218b856117ae63c6ac0b4dadbd1538b8f26e6773db645c215569",
+        "audience_hash": "305b1176dbea88cf22bd0ec07eda9b7d141918180461d942319bf4c770230dc5",
+        "caveat_audience": "spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking",
+        "tenant_id": "tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd",
+        "actor_spiffe_id": "spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking",
+        "presenter_spiffe_id": "spiffe://tnt-135f90ba-5922-4fa6-9a7d-61b763bfd662.tenants.stage.cascadeauth.dev/trip-planner",
+        "caveat_predicates": "amount_max:8000,originator_reference:PO #4143,task_ref:po4143-39f7c918fd15,valid_until:1790222830",
+        "task_ref": "po4143-39f7c918fd15",
+        "agent_decision_action": "settle",
+        "latency_ms": 2.146
+      },
+      "respond": {
+        "timestamp_unix_seconds": 1790221030,
+        "event_type": "respond",
+        "result": "success",
+        "root_token_id": "02b9a006481974a22e6ca36b16fb318aa40a6c037c42af33ab2e970e472d4868",
+        "token_id": "87412720fb91bc9ddc6c8e419ac4456a7b35c89737fa0697a20ea3c398d8d6ed",
+        "hop_index": 2,
+        "creator_svid_hash": "305b1176dbea88cf22bd0ec07eda9b7d141918180461d942319bf4c770230dc5",
+        "tenant_id": "tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd",
+        "actor_spiffe_id": "spiffe://tnt-23f3ecb2-1d8b-4843-bc97-3098f56f30fd.tenants.stage.cascadeauth.dev/booking",
+        "task_ref": "po4143-39f7c918fd15",
+        "terminal_attestation": "eyJhbGciOiJFZERTQSIsImtpZCI6IjlPLXk3RERlZDhHX3hHUGttaE5OdmxrWGRJb1dURk5tYldHaG5reVhNaUEiLCJ0eXAiOiJhYWMtdGVybWluYWwtYXR0ZXN0YXRpb24rand0IiwieDVjIjpbIk1JSUJyakNDQVdDZ0F3SUJBZ0lVZGNhTGRmeDhTbDVXWkJDUWRMZGpkSGJUR1dFd0JRWURLMlZ3TUNNeElUQWZCZ05WQkFNTUdFRkJReUJzYjJOaGJDQmtaWFpsYkc5d2JXVnVkQ0JEUVRBZUZ3MHlOakE1TWpRd016TXhOVGRhRncweU5qQTVNalV3TXpNMk5UZGFNQUF3S2pBRkJnTXJaWEFESVFBVHE3RVR5ODhiY0ViQ21wUnhUS3I4UWh4Q2VtOVFlMnN4TVhrVGxzVFlCS09CeURDQnhUQU1CZ05WSFJNQkFmOEVBakFBTUE0R0ExVWREd0VCL3dRRUF3SUhnREFmQmdOVkhTTUVHREFXZ0JSYUFXYTNuZ0VNblNKRW5WT0NpYnl4Mi9rWXJUQWRCZ05WSFNVRUZqQVVCZ2dyQmdFRkJRY0RBZ1lJS3dZQkJRVUhBd0V3WlFZRFZSMFJBUUgvQkZzd1dZWlhjM0JwWm1abE9pOHZkRzUwTFRJelpqTmxZMkl5TFRGa09HSXRORGcwTXkxaVl6azNMVE13T1RobU5UWm1NekJtWkM1MFpXNWhiblJ6TG5OMFlXZGxMbU5oYzJOaFpHVmhkWFJvTG1SbGRpOWliMjlyYVc1bk1BVUdBeXRsY0FOQkFOd1JUSXNyYTdnMWp3RHJrVFI4aC90bWVpOSswalE3MHgyS2sycVd1bERzRnBSNEdxN2o2N1hadjFjdk45OTBuV3hvRndOYitJQ3VWZjFwTnZOYXpnbz0iXX0.eyJhY3Rpb25fc3VtbWFyeSI6IntcImFtb3VudFwiOiA4MDAwLCBcImN1cnJlbmN5XCI6IFwiVVNEXCIsIFwiZGVwYXJ0dXJlXCI6IFwiMTIgTWF5XCIsIFwiZnJvbVwiOiBcIkF1c3RpblwiLCBcIm9yZGVyXCI6IFwiUE8gIzQxNDNcIiwgXCJwYXltZW50X3N0YXR1c1wiOiBcInVucGFpZFwiLCBcInJlc2VydmF0aW9uX2lkXCI6IFwic3ludGhldGljLXBvNDE0My0zOWY3YzkxOGZkMTVcIiwgXCJzeW50aGV0aWNcIjogdHJ1ZSwgXCJ0b1wiOiBcIlNoYW5naGFpXCJ9IiwiaWF0IjoxNzkwMjIxMDMwLCJpc3MiOiJ0bnQtMjNmM2VjYjItMWQ4Yi00ODQzLWJjOTctMzA5OGY1NmYzMGZkIiwicm9vdF90b2tlbl9pZCI6IjAyYjlhMDA2NDgxOTc0YTIyZTZjYTM2YjE2ZmIzMThhYTQwYTZjMDM3YzQyYWYzM2FiMmU5NzBlNDcyZDQ4NjgiLCJzZXR0bGVtZW50X2lkIjoic3ludGhldGljLXBvNDE0My0zOWY3YzkxOGZkMTUiLCJ0YXNrX3JlZiI6InBvNDE0My0zOWY3YzkxOGZkMTUiLCJ0ZXJtaW5hbF9hZ2VudF9zdmlkIjoic3BpZmZlOi8vdG50LTIzZjNlY2IyLTFkOGItNDg0My1iYzk3LTMwOThmNTZmMzBmZC50ZW5hbnRzLnN0YWdlLmNhc2NhZGVhdXRoLmRldi9ib29raW5nIn0.0bEVTZo3X3da7aToJIcbAIEQO6D-x0gi5XyOzdqnrUtjCAGY_TpQPlJieiqO7IiTnuOtDRBLP-Tw5vxmaKT9AQ",
+        "agent_decision_action": "settle"
+      }
+    }
+  ],
+  "lifecycle": [
+    "normal configuration refresh preserves generated YAML",
+    "local widening refused before return receive",
+    "booking leaf renewal",
+    "booking CA renewal and explicit Vantis trust refresh",
+    "trip-planner leaf renewal",
+    "trip-planner CA renewal and explicit Tourfedia trust refresh",
+    "same booking workload in CLI supplied-material slot without CA key",
+    "supplied leaf replacement",
+    "supplied CA replacement, republication and explicit Vantis trust refresh",
+    "normal booking slot restored"
+  ],
+  "source_files": {
+    "demo": "8f13a9027139d1aa0f87322d2b0da2e2521162d08fe4e1c1105525231f0da613",
+    "compose.yaml": "fd180d5a1d20adde3d51ca5c4f4a97bfd2d5c7d82c5a7565fb4e180958918232",
+    "agent/agent.py": "f0b3a81d5039dcb7d0346a00bc1597fb1596a157e89a0cea92a55f1fea23e22d",
+    "agent/client.py": "3a79c112dc216747614155b7f930b14b220b94d01d4f8a6e40c072b0e172fac4",
+    "tests/fixtures/wire.py": "479655eb305fc196e1c57877acae93f99892d91ad5228bdd9499ac4c05b85ab7",
+    "tests/fixtures/run.py": "c7c33e8f21c86aecdddaf116555cd9c7e9d2a36220f975c1bdfb4bb01eb98219"
+  },
+  "limitations": [
+    "Local Docker on macOS arm64 against existing AAC stage; no hosted runtime deployment.",
+    "Simulated approval and unpaid synthetic reservation only; no real booking/payment/price guarantee.",
+    "Prepublication implementation evidence; repository rename/public clone and affected guide publication remain pending.",
+    "The supplied test issuer is the CLI development issuer, not a production CA qualification."
+  ]
+}

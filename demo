@@ -1,0 +1,109 @@
+#!/usr/bin/env python3
+"""Compose convenience only; use the ordinary AAC CLI for setup and maintenance.
+
+./demo up                           start both registered/configured pairs
+./demo run [reservation|fare-change|fresh-authority|local-widening]
+./demo compose <trip-planner|booking> <docker compose arguments...>
+./demo check                        explicit test-only adversarial driver
+./demo down                         stop containers; retain CLI material
+"""
+import json
+import os
+import shlex
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parent
+CLI_HOME = Path(os.environ.get("AAC_CLI_HOME", Path.home() / ".aac")).resolve()
+AGENTS = ("trip-planner", "booking")
+
+
+def local_name(agent):
+    # Test-only supplied-certificate slot, reusing the same booking identity.
+    return os.environ.get("AAC_TEST_BOOKING_AGENT", "booking") if agent == "booking" else agent
+
+
+def command(*args, capture=False):
+    return subprocess.run(args, cwd=REPO, check=True, text=True,
+                          stdout=subprocess.PIPE if capture else None).stdout
+
+
+def generated_env(agent):
+    # This is the supported Compose output, not the CLI's private record schema.
+    values = {}
+    for line in (CLI_HOME / "agents" / local_name(agent) / "compose.env").read_text().splitlines():
+        if line and not line.startswith("#"):
+            key, value = line.split("=", 1)
+            values[key] = "".join(shlex.split(value))
+    return values
+
+
+def compose(agent, *args):
+    if agent not in AGENTS:
+        raise ValueError("Select trip-planner or booking")
+    vantis, tourfedia = (generated_env(name) for name in AGENTS)
+    env = {**os.environ, "AAC_DEMO_UID": str(os.getuid()), "AAC_DEMO_GID": str(os.getgid()),
+           "AAC_DEMO_ROLE": agent, "AAC_DEMO_BOOKING_ID": tourfedia["AAC_WORKLOAD_SPIFFE_ID"],
+           "AAC_DEMO_VANTIS_STATE": vantis["AAC_AGENT_STATE_DIR"],
+           "AAC_DEMO_TOURFEDIA_STATE": tourfedia["AAC_AGENT_STATE_DIR"]}
+    subprocess.run(["docker", "compose", "--env-file", str(CLI_HOME / "agents" / local_name(agent) / "compose.env"),
+                    *args], cwd=REPO, env=env, check=True)
+
+
+def wait_for_publication(agent):
+    deadline = time.monotonic() + 300
+    while time.monotonic() < deadline:
+        report = json.loads(command("aac", "agent", "status", "--agent", local_name(agent),
+                                    "--remote", "--output", "json", capture=True))
+        # The supported status fields identify this agent's current public keys.
+        public = json.dumps(report)
+        if '"contains_root_key_id": true' in public and '"contains_ca_anchor_id": true' in public:
+            return
+        time.sleep(2)
+    raise RuntimeError(f"Public keys not visible for {agent}; inspect its publisher logs")
+
+
+def main():
+    args = sys.argv[1:]
+    if not args:
+        print(__doc__)
+    elif args[0] == "compose":
+        compose(args[1], *args[2:])
+    elif args[0] == "up":
+        current = command("docker", "network", "ls", "--format", "{{.Name}}", capture=True).splitlines()
+        if "aac-compose-demo" not in current:
+            command("docker", "network", "create", "aac-compose-demo")
+        compose("trip-planner", "build", "agent")
+        for agent in AGENTS:
+            compose(agent, "up", "--detach", "--no-build", "--force-recreate")
+        for agent in AGENTS:
+            compose(agent, "run", "--rm", "--no-deps", "client", "wait")
+            wait_for_publication(agent)
+        print("Both pairs are ready. Run ./demo run")
+    elif args[0] == "run":
+        scenario = args[1] if len(args) > 1 else "reservation"
+        if scenario not in ("reservation", "fare-change", "fresh-authority", "local-widening"):
+            raise ValueError("Unknown demo scenario")
+        compose("trip-planner", "run", "--rm", "--no-deps", "client", scenario)
+    elif args[0] == "check":
+        for tenant, agent in zip(("VANTIS", "TOURFEDIA"), AGENTS):
+            status = json.loads(command("aac", "agent", "status", "--agent", local_name(agent), "--output", "json", capture=True))
+            os.environ["AAC_TEST_" + tenant] = json.dumps({key: status[key] for key in
+                ("tenant_id", "workload_spiffe_id", "root_key_id")})
+            values = generated_env(agent)
+            os.environ["AAC_TEST_" + tenant + "_KEYS"] = values["AAC_AGENT_SIDECAR_DIR"]
+            os.environ["AAC_TEST_" + tenant + "_PAIR"] = values["AAC_AGENT_SHARED_DIR"]
+        compose("booking", "-f", "compose.yaml", "-f", "tests/compose.fixtures.yaml",
+                "run", "--build", "--rm", "fixture")
+    elif args[0] == "down":
+        for agent in AGENTS:
+            compose(agent, "down")
+        command("docker", "network", "rm", "aac-compose-demo")
+    else:
+        raise ValueError("See ./demo for commands")
+
+
+if __name__ == "__main__":
+    main()
