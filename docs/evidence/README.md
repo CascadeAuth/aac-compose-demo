@@ -1,5 +1,34 @@
 # Measured runs
 
+## Two-tenant reservation acceptance — 2026-09-24 UTC
+
+[reservation-20260924.json](reservation-20260924.json) records implementation
+commit `0e45df5820a74d65eae864a41726b11b09981eae`, public CLI 0.2.2,
+sidecar v0.4.1, publisher 0.2.3, exact image digests and actual signed receipts.
+The macOS arm64 stage campaign passed 22 offline tests and all four live tests
+(140.23 seconds), including 63 successful commands and nine cross-tenant
+adversarial campaigns during configuration/certificate maintenance.
+
+The recorded checks cover the $8,000 unpaid reservation with the sender's
+verified receipt grade, separate fare-change decline and fresh $9,500 authority,
+six invalid starts across both aliases, local/forced widening and wrong presenter
+with successful controls. Local widening is combined with the released Go
+instrumented tests proving zero outgoing proof-signing calls; those tested
+runtime files are unchanged from v0.4.1. Both tenants' leaf/CA renewals and
+explicit peer trust refresh passed, as did replacement in a supplied-material
+slot for the same booking workload. The test issuer was the CLI's development
+issuer; no production issuer qualification is claimed.
+
+A clean source archive of that commit, without Git/private coordination files,
+installed its test dependencies from public PyPI and passed 22 offline tests.
+With an empty Docker credential configuration it started the stacks and passed
+the two positive/adversarial live tests (3.35 seconds), using the already
+authorized test tenant material. Anonymous registry reads confirmed both public
+image manifests. This is prepublication consumer evidence: the renamed public
+clone, final public documentation and release closeout remain pending.
+
+## Historical one-agent measurements
+
 Real runs of this starter against the AAC stage service. Nothing in these
 files is secret: identifiers, outcomes and durations only.
 
