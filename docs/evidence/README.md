@@ -1,5 +1,39 @@
 # Measured runs
 
+## Execution-graph acceptance — 2026-09-25 UTC
+
+[aeg-20260925.json](aeg-20260925.json) records public `aac-aeg 0.1.0`, CLI 0.2.3,
+the demo's sidecar v0.4.1 and publisher 0.2.3, against stage control plane 0.2.3.
+The clean public installation passed 82 AEG interface tests. This source passes
+33 offline tests and three selected live tests (6.40 seconds). The separate CA
+lifecycle campaign was not repeated; expired leaf certificates were renewed
+through the CLI before the run, retaining the existing tenants and CAs.
+
+The first live campaign exposed a stale adversarial-test assertion that read
+`root_token_id` from the application record. The public eight-field format has
+`token_id`; the corrected fixture joins it to receiver telemetry for the expected
+root and checks the task reference. Four offline cases accept the public format
+and reject mismatched token/root/task evidence. The corrected live campaign
+passed all six invalid chain-start cases and both receiver attacks, with positive
+controls and no application invocation on the refused attacks.
+
+The $8,000 unpaid reservation, fare-change refusal and fresh $9,500 authority
+have separate recorded roots. Full, sender-only, receiver-only, hybrid and
+central graphs render; local listing keeps repeated attempts distinct. A real
+receiver-only forwarded root also renders through the hosted endpoint with
+missing ancestors labeled. Hosted graphs contain no private order/reservation
+fields. The full graph's details show both workloads, 10,000 → 8,000 caps and
+expiry, PO #4143, the unpaid result, recorded `verified` grade and receipt source.
+
+Ten generated artifacts have no declared external or relative asset URLs.
+Chrome inspection over loopback HTTP observed no off-origin asset requests;
+its automatic local favicon probe is recorded separately. Direct file-URL
+navigation was not available to the browser automation. Existing ignored
+minZoom/maxZoom diagnostics remain; graph rendering and details work. These
+receipts describe observed evidence, not proof of payment or independent
+verification of the business result. Old action logs were preserved before the
+format transition.
+
 ## Supplied-material repeat-run correction — 2026-09-24 UTC
 
 The renamed public main clone passed 22 offline tests and three live tests,

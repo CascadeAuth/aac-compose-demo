@@ -1,0 +1,296 @@
+{
+  "date_utc": "2026-09-25",
+  "demo_implementation_commit": "7ad3928cb9daa77574a77547b94486ff709a8860",
+  "test_consumer_fix_commit": "12384ca8aa1f738f496f95b9ddc71e826f1294bf",
+  "platform": "macOS arm64",
+  "packages": {
+    "aac-aeg": "0.1.0",
+    "aac-cli": "0.2.3",
+    "aac-invoke-auth": "0.1.2"
+  },
+  "images": {
+    "sidecar": {
+      "version": "v0.4.1",
+      "digest": "sha256:1379a786668227100bf20a9830c2988fcfff399fa6d6acb54f435c6bed5976f4"
+    },
+    "publisher": {
+      "version": "0.2.3",
+      "digest": "sha256:f2a4f0a9a00af4d5962f985341076a37a42eeb5cc1b4250d10989638ffe58b56"
+    }
+  },
+  "stage": {
+    "url": "https://api.stage.cascadeauth.dev",
+    "control_plane_version": "0.2.3",
+    "health": "ok"
+  },
+  "tests": {
+    "offline_passed": 33,
+    "live_selected_passed": 3,
+    "live_deselected": 1,
+    "live_seconds": 6.4,
+    "deselection": "The separate certificate/CA lifecycle campaign was not repeated; existing leaf renewal was performed as setup.",
+    "initial_campaign": {
+      "passed": 2,
+      "failed": 1,
+      "reason": "Adversarial fixture expected a removed application root field; fixed by token-to-root join through receiver telemetry and task correlation."
+    }
+  },
+  "business_runs": [
+    {
+      "scenario": "reservation",
+      "task_ref": "po4143-8e3d1db36aa3",
+      "root_token_id": "d895a35eea6085e7f6407195a2b969fa4f758ea987c116cf55ab0b616205c884",
+      "amount": 8000,
+      "currency": "USD",
+      "payment_status": "unpaid",
+      "reservation_id": "synthetic-po4143-8e3d1db36aa3",
+      "receipt_grade": "verified"
+    },
+    {
+      "scenario": "fare-change",
+      "task_ref": "po4143-c057b187c750",
+      "root_token_id": "4dc7fa5e150df115f2e6a4ea54d3fa845dd1685a9797d0df52c3f9ccf72e6b56",
+      "decision": "refuse",
+      "reason": "Fare changed to $9,500; no reservation was created."
+    },
+    {
+      "scenario": "fresh-authority",
+      "task_ref": "po4143-eab926676531",
+      "root_token_id": "5ff65a0c7afafdbf19dad7c6a0ed23ed7fea1ea2e9d716ad2fb8a2222263dd52",
+      "amount": 9500,
+      "currency": "USD",
+      "payment_status": "unpaid",
+      "reservation_id": "synthetic-po4143-eab926676531",
+      "receipt_grade": "verified"
+    },
+    {
+      "scenario": "reservation",
+      "task_ref": "po4143-67eeb3aeda6c",
+      "root_token_id": "2a257b05407d21680d5f1a125d3ad551b47da465f3a9f0c923d755648c376992",
+      "amount": 8000,
+      "currency": "USD",
+      "payment_status": "unpaid",
+      "reservation_id": "synthetic-po4143-67eeb3aeda6c",
+      "receipt_grade": "verified"
+    }
+  ],
+  "adversarial": {
+    "chain_start": [
+      {
+        "case": "absent",
+        "alias": "delegations",
+        "http_status": 401,
+        "successful_mints": 0,
+        "application_invocations": 0
+      },
+      {
+        "case": "wrong-pair",
+        "alias": "delegations",
+        "http_status": 401,
+        "successful_mints": 0,
+        "application_invocations": 0
+      },
+      {
+        "case": "altered",
+        "alias": "delegations",
+        "http_status": 401,
+        "successful_mints": 0,
+        "application_invocations": 0
+      },
+      {
+        "case": "absent",
+        "alias": "mint-root",
+        "http_status": 401,
+        "successful_mints": 0,
+        "application_invocations": 0
+      },
+      {
+        "case": "wrong-pair",
+        "alias": "mint-root",
+        "http_status": 401,
+        "successful_mints": 0,
+        "application_invocations": 0
+      },
+      {
+        "case": "altered",
+        "alias": "mint-root",
+        "http_status": 401,
+        "successful_mints": 0,
+        "application_invocations": 0
+      }
+    ],
+    "receiver": [
+      {
+        "case": "return-control",
+        "root_token_id": "76fdb66df2205e605108e9205acf359de202275c601677ac50e930003c026532",
+        "task_ref": "fixture-4dbb35434ea34d5a991d6710faaa10b7",
+        "http_status": 200,
+        "application_invocations": 1,
+        "error_code": null
+      },
+      {
+        "case": "forced-widening",
+        "root_token_id": "1e51959ad8095531aad377256b9e55ccb29a0c86f5ed78b99238e78c91450591",
+        "task_ref": "fixture-979a60e79ef64abcbb7be6bb06ebaf20",
+        "http_status": 403,
+        "application_invocations": 0,
+        "error_code": "ERR_CHAIN_INVALID"
+      },
+      {
+        "case": "presenter-control",
+        "root_token_id": "d9bc0ff4bfb424b6069155eec3d80e82a2caf63a08ed57d911acd5747e78e21d",
+        "task_ref": "fixture-c4e357dcfdd14bdc8c3db93d2fd8beb6",
+        "http_status": 200,
+        "application_invocations": 1,
+        "error_code": null
+      },
+      {
+        "case": "wrong-presenter",
+        "root_token_id": "c3c25bcd52a6b8418770cee0bf2e052074c7d7e062f745197aa8d046b48bee62",
+        "task_ref": "fixture-2447218350b249f4ab9b0d5c4346df37",
+        "http_status": 403,
+        "application_invocations": 0,
+        "error_code": "ERR_PRESENTER_NOT_PREVIOUS_HOLDER"
+      }
+    ]
+  },
+  "graphs": [
+    {
+      "file": "po4143-8e3d1db36aa3-reservation.html",
+      "sha256": "26bd93c901c4def56c7f577bfc4e3ee1372e18ccf9b91ef4abbdbf9742118d9c",
+      "bytes": 760120,
+      "nodes": 5,
+      "edges": 4,
+      "declared_asset_urls": []
+    },
+    {
+      "file": "po4143-c057b187c750-fare-change.html",
+      "sha256": "9b459d900b35812c358db04a13ec3889f113db8267abf2e387a217282b0b0218",
+      "bytes": 752925,
+      "nodes": 5,
+      "edges": 4,
+      "declared_asset_urls": []
+    },
+    {
+      "file": "po4143-eab926676531-fresh-authority.html",
+      "sha256": "b705b2409b02585bdec33034af25c2e89b0c7b12fbf4735be4f7ebfbf1111eb1",
+      "bytes": 760140,
+      "nodes": 5,
+      "edges": 4,
+      "declared_asset_urls": []
+    },
+    {
+      "file": "po4143-67eeb3aeda6c-full.html",
+      "sha256": "a429173d255f750958ae0b4acf4d3c5749f428e892b2e69214b66f5deead44a1",
+      "bytes": 760122,
+      "nodes": 5,
+      "edges": 4,
+      "declared_asset_urls": []
+    },
+    {
+      "file": "po4143-67eeb3aeda6c-hybrid.html",
+      "sha256": "bb03aae4102384f66c185f3a97d3c5f5a2c0ae1baf06eb63fa4390a5ceae2b2d",
+      "bytes": 745932,
+      "nodes": 5,
+      "edges": 5,
+      "declared_asset_urls": []
+    },
+    {
+      "file": "po4143-67eeb3aeda6c-central.html",
+      "sha256": "e13671a519a98aa4651eef1139d6fa3f437db1ca43afcfdba52fe3c336407c77",
+      "bytes": 730870,
+      "nodes": 5,
+      "edges": 4,
+      "declared_asset_urls": []
+    },
+    {
+      "file": "po4143-67eeb3aeda6c-receiver.html",
+      "sha256": "730ee8d7855287a64df9418f2a0f216cacef13b44868842aabd5d3992240c0f3",
+      "bytes": 745379,
+      "nodes": 4,
+      "edges": 2,
+      "declared_asset_urls": []
+    },
+    {
+      "file": "po4143-67eeb3aeda6c-sender.html",
+      "sha256": "b61035dce2b9edaf8364bd03c7fb3d0b21577b06b2094c9e47f8c82e99f9f038",
+      "bytes": 744687,
+      "nodes": 5,
+      "edges": 4,
+      "declared_asset_urls": []
+    },
+    {
+      "file": "hosted-full.html",
+      "sha256": "c67c632415fb66d228f9f8d28f3526dc50dc535ab2dc603241ff75260da09e41",
+      "bytes": 730371,
+      "nodes": 5,
+      "edges": 4,
+      "declared_asset_urls": []
+    },
+    {
+      "file": "hosted-receiver-only.html",
+      "sha256": "72d8b5ba64e710ec61c7070a2bf4568e82fe345627574bb7fdfe1c411ca510d8",
+      "bytes": 728171,
+      "nodes": 4,
+      "edges": 2,
+      "declared_asset_urls": []
+    }
+  ],
+  "discovery": {
+    "listed_roots": 12,
+    "root_ids_unique": true,
+    "all_four_selected_attempts_present_once": true,
+    "same_order_attempts_remain_separate": true
+  },
+  "hosted_full": {
+    "root_token_id": "de7d3470546b43e6d2dd9184aab187d46c0426c2a551c75f284191e1dc7379e9",
+    "event_count": 5,
+    "business_payload_absent": true
+  },
+  "hosted_receiver_only": {
+    "root_token_id": "057c2910aad4f2e4e56186c4a9956d78d1307034704f4864e990dad20688ff4d",
+    "event_count": 2,
+    "event_types": [
+      "receipt_observed",
+      "token_received"
+    ],
+    "missing_ancestors_labeled": true,
+    "business_payload_absent": true,
+    "sender_forwarding_temporarily_disabled": true,
+    "normal_forwarding_restored": true
+  },
+  "browser": {
+    "full_graph": "po4143-67eeb3aeda6c-full.html",
+    "browser": "Chrome",
+    "visible_details_verified": [
+      "Vantis and Tourfedia workloads",
+      "T1 amount_max 10,000 and expiry",
+      "T2 amount_max 8,000 and expiry",
+      "PO #4143",
+      "recorded receipt grade verified",
+      "synthetic unpaid reservation",
+      "recorded terminal-response evidence, not re-verified"
+    ],
+    "observed_page_assets": [
+      {
+        "kind": "image",
+        "url": "http://127.0.0.1:8768/favicon.ico",
+        "source": "browser-origin favicon probe; not declared by HTML"
+      }
+    ],
+    "declared_asset_urls": [],
+    "off_origin_asset_requests": [],
+    "console_diagnostics": [
+      "The existing renderer logs ignored minZoom/maxZoom options; rendering and detail inspection passed."
+    ],
+    "direct_file_browser_check": "Not exercised: browser automation rejected direct file URLs. Browser rendering was inspected over loopback HTTP; no alternative direct-file access was attempted.",
+    "static_asset_check_files": 10
+  },
+  "boundaries": [
+    "Reservations and human approval are simulated; no supplier transaction or payment.",
+    "Graphs reconstruct observations, not independently verified business truth.",
+    "Recorded receipt grades are displayed; AEG does not verify the signatures again.",
+    "The original action logs were preserved before switching to the public eight-field format.",
+    "No private SDK or editable package was used by the public consumer."
+  ]
+}
