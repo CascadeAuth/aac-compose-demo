@@ -59,6 +59,11 @@ def records(path: Path) -> list[dict]:
 
 
 def matching(directory: Path, filename: str, root: str, task: str) -> list[dict]:
+    if filename == "actions.jsonl":
+        tokens = {row["token_id"] for row in records(directory / "telemetry.jsonl")
+                  if row.get("root_token_id") == root and row.get("task_ref") == task and row.get("token_id")}
+        return [row for row in records(directory / filename)
+                if row.get("token_id") in tokens and row.get("action_payload", {}).get("task_ref") == task]
     return [row for row in records(directory / filename)
             if row.get("root_token_id") == root and row.get("task_ref") == task]
 
@@ -73,9 +78,10 @@ def verify_result(started: dict, dispatch: dict, received: dict, respond: dict,
     assert dispatch["result"] == "success", dispatch
     assert dispatch["terminal_attestation_verification"] == "verified", dispatch
     root, task = started["root_token_id"], started["task_ref"]
-    for row in (dispatch, received, respond, action):
+    for row in (dispatch, received, respond):
         assert row["root_token_id"] == root and row["task_ref"] == task, row
         assert row["token_id"] == dispatch["token_id"], row
+    assert action["token_id"] == dispatch["token_id"] and action["action_payload"]["task_ref"] == task
     assert dispatch["caveat_audience"] == expected_signer
     assert received["actor_spiffe_id"] == expected_signer
     assert respond["result"] == "success" and respond["agent_decision_action"] == "settle"
@@ -83,14 +89,14 @@ def verify_result(started: dict, dispatch: dict, received: dict, respond: dict,
     claims = json.loads(base64.urlsafe_b64decode(part + "=" * (-len(part) % 4)))
     assert claims["terminal_agent_svid"] == expected_signer
     assert claims["root_token_id"] == root and claims["task_ref"] == task
-    decision = action["decision"]
+    decision = action["action_payload"]["agent_decision"]
     assert claims["settlement_id"] == decision["settlement_id"]
     assert claims["action_summary"] == decision["action_summary"]
     result = json.loads(claims["action_summary"])
     assert all(result[key] == value for key, value in ORDER.items())
     assert result["reservation_id"] == claims["settlement_id"] == "synthetic-" + task
     assert result["payment_status"] == "unpaid" and result["synthetic"] is True
-    assert result["currency"] == "USD" and result["amount"] == action["payload"]["offer"]
+    assert result["currency"] == "USD" and result["amount"] == action["action_payload"]["payload"]["offer"]
     limits = dict(part.split(":", 1) for part in dispatch["caveat_predicates"].split(","))
     assert int(limits["amount_max"]) == result["amount"]
     assert limits["originator_reference"] == ORDER["order"] and limits["task_ref"] == task
@@ -121,7 +127,7 @@ def run(scenario: str = "reservation") -> dict:
         receive = next((e for e in got if e["event_type"] == "receive" and e["result"] == "success"), None)
         respond = next((e for e in got if e["event_type"] == "respond"), None)
         if scenario == "fare-change" and dispatch and actions:
-            assert actions[0]["decision"] == {"action": "refuse", "reason": "Fare changed to $9,500; no reservation was created."}
+            assert actions[0]["action_payload"]["agent_decision"] == {"action": "refuse", "reason": "Fare changed to $9,500; no reservation was created."}
             assert not respond
             result = {"application_decline": actions[0], "dispatch": dispatch}
             print(json.dumps(result), flush=True)
@@ -133,7 +139,7 @@ def run(scenario: str = "reservation") -> dict:
                 assert "candidate delegation refused" in failure["failure_detail"], failure
                 assert not any(e["event_type"] == "receive" for e in sent)
                 assert len(matching(sender, "actions.jsonl", root, task)) == 1
-                assert actions[0]["decision"]["destination"] == "test_vantis"
+                assert actions[0]["action_payload"]["agent_decision"]["destination"] == "test_vantis"
                 print(json.dumps({"local_refusal": failure}), flush=True)
                 return failure
         elif dispatch and receive and respond and actions:

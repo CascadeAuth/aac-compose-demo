@@ -10,6 +10,8 @@ services:
     user: *user
     environment:
       AAC_DEMO_ROLE: ${AAC_DEMO_ROLE:?}
+      AAC_TENANT_ID: ${AAC_TENANT_ID:?}
+      AAC_WORKLOAD_SPIFFE_ID: ${AAC_WORKLOAD_SPIFFE_ID:?}
       AAC_DEMO_TEST_MODE: ${AAC_DEMO_TEST_MODE:-0}
       AAC_DEMO_ACTIONS: /evidence/actions.jsonl
       AAC_INVOKE_AUTH_SECRET_FILE: /run/secrets/pairing.secret

@@ -7,7 +7,7 @@ sidecar:
   agent_invoke_url: http://127.0.0.1:8000/invoke
   telemetry:
     sink: telemetry.jsonl
-    central_forward: false
+    central_forward: true
 replay_protection:
   backend: memory
   deployment_profile: basic

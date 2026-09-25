@@ -40,7 +40,7 @@ def test_positive_fare_change_and_fresh_authority():
     for scenario in ("reservation", "fare-change", "fresh-authority"):
         rows = json_rows(run("./demo", "run", scenario))
         if scenario == "fare-change":
-            assert rows[-1]["application_decline"]["decision"]["action"] == "refuse"
+            assert rows[-1]["application_decline"]["action_payload"]["agent_decision"]["action"] == "refuse"
         else:
             assert rows[-1]["terminal_attestation_verification"] == "verified"
             assert rows[-1]["reservation"]["amount"] == (9500 if scenario == "fresh-authority" else 8000)
@@ -95,3 +95,46 @@ def test_local_refusal_refresh_and_ca_renewal():
             run("./demo", "up")
             run("./demo", "run")
             run("./demo", "check")
+
+
+def test_public_aeg_full_partial_and_forwarded_root():
+    """Opt-in public-artifact acceptance after the renderer has been installed."""
+    output = run("./demo", "run", "reservation")
+    mapping = json.loads(next(line.removeprefix("AEG input mapping: ") for line in output.splitlines()
+                              if line.startswith("AEG input mapping: ")))
+    root = mapping["root_token_id"]
+    planner = HOME / "agents/trip-planner/state"
+    booking = HOME / "agents/booking/state"
+    listed = json.loads(run("aac-aeg", "list", "--events", str(planner / "telemetry.jsonl"),
+                            "--actions", str(planner / "actions.jsonl"),
+                            "--task-ref", mapping["task_ref"], "--output", "json"))
+    assert [chain["root_token_id"] for chain in listed["chains"]] == [root]
+    # Test-only bounded wait: forwarding is asynchronous and best effort.
+    for _ in range(30):
+        central = subprocess.run(["aac", "chain", "show", "--profile", "vantis",
+                                  "--token-id", root, "--output", "json"],
+                                 capture_output=True, text=True, timeout=60)
+        if central.returncode == 0 and json.loads(central.stdout)["event_count"]:
+            break
+        time.sleep(1)
+    assert central.returncode == 0, central.stderr
+    assert json.loads(central.stdout)["root_token_id"] == root
+    for label, directories, profile in (("full", [planner, booking], []),
+                                       ("sender", [planner], []),
+                                       ("receiver", [booking], []),
+                                       ("hybrid", [planner], ["--profile", "vantis"]),
+                                       ("central", [], ["--profile", "vantis"])):
+        destination = REPO / ".runs" / (mapping["task_ref"] + "-" + label + ".html")
+        arguments = ["aac-aeg", "render", "--root-token-id", root, *profile]
+        for directory in directories:
+            arguments += ["--events", str(directory / "telemetry.jsonl"),
+                          "--actions", str(directory / "actions.jsonl")]
+        run(*arguments, "--output", str(destination))
+        html = destination.read_text()
+        assert root in html and "Partial evidence" in html
+        if label == "full":
+            assert "verified" in html and "unpaid" in html and "PO #4143" in html
+        if label == "receiver":
+            assert "NOT OBSERVED" in html
+        if label == "central":
+            assert "PO #4143" not in html

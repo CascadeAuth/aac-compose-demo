@@ -4,6 +4,7 @@ Marc's approval and Tourfedia's inventory are explicitly simulated.
 """
 import json
 import os
+import time
 from pathlib import Path
 
 from aac_invoke_auth.fastapi import InvokeAuthGuard, InvokeAuthMiddleware
@@ -53,11 +54,22 @@ async def invoke(request: Request) -> dict:
     body = await request.json()
     decision = decide(os.environ["AAC_DEMO_ROLE"], body,
                       test_mode=os.environ.get("AAC_DEMO_TEST_MODE") == "1")
-    # Minimal business evidence joined to authenticated callback context.
-    record = {"root_token_id": request.headers["x-aac-root-token-id"],
+    # The public eight-field format; token identity comes from the verified
+    # callback context, not the application's business payload.
+    payload = {"task_ref": body["task_ref"],
+               "decision": {"forward": "forwarded", "refuse": "refused", "settle": "settled"}.get(decision["action"], decision["action"]),
+               "agent_decision": decision, "payload": body["current_arrival"]["payload"]}
+    if decision["action"] == "settle":
+        payload["result"] = json.loads(decision["action_summary"])
+    if "reason" in decision:
+        payload["reason"] = decision["reason"]
+    record = {"timestamp_unix_seconds": time.time(), "event_type": "action_taken",
+              "tenant_id": os.environ["AAC_TENANT_ID"],
+              "tenant_short": "Vantis" if os.environ["AAC_DEMO_ROLE"] == "trip-planner" else "Tourfedia",
               "token_id": request.headers["x-aac-presenter-token-id"],
-              "task_ref": body["task_ref"], "role": os.environ["AAC_DEMO_ROLE"],
-              "payload": body["current_arrival"]["payload"], "decision": decision}
-    with Path(os.environ["AAC_DEMO_ACTIONS"]).open("a") as output:
+              "actor_spiffe_id": os.environ["AAC_WORKLOAD_SPIFFE_ID"],
+              "action_summary": decision.get("action_summary") or decision.get("reason") or "Forwarded PO #4143 reservation request",
+              "action_payload": payload}
+    with Path(os.environ["AAC_DEMO_ACTIONS"]).open("a", encoding="utf-8") as output:
         output.write(json.dumps(record) + "\n")
     return decision
