@@ -1,6 +1,7 @@
 import importlib.machinery
 import importlib.util
 import json
+from types import SimpleNamespace
 
 from conftest import REPO
 
@@ -12,7 +13,7 @@ def test_launcher_uses_supported_outputs_and_separate_projects(synthetic_home, m
     module = importlib.util.module_from_spec(spec)
     loader.exec_module(module)
     calls = []
-    monkeypatch.setattr(module.subprocess, "run", lambda argv, **kwargs: calls.append((argv, kwargs)))
+    monkeypatch.setattr(module.subprocess, "run", lambda argv, **kwargs: (calls.append((argv, kwargs)), SimpleNamespace(stdout=None))[1])
     module.compose("trip-planner", "config")
     module.compose("booking", "config")
     assert calls[0][0][3] != calls[1][0][3]
@@ -42,3 +43,21 @@ def test_test_only_wire_and_proof_use_cli_issued_material(synthetic_home, monkey
     claims = json.loads(decode(body))
     assert claims["htu"] == target
     assert claims["ath"] == wire.b64(wire.hashlib.sha256(token.encode()).digest())
+
+
+def test_run_prints_exact_input_paths_and_saves_mint(synthetic_home, tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("AAC_CLI_HOME", str(synthetic_home))
+    loader = importlib.machinery.SourceFileLoader("demo_capture", str(REPO / "demo"))
+    spec = importlib.util.spec_from_loader(loader.name, loader)
+    module = importlib.util.module_from_spec(spec); loader.exec_module(module)
+    monkeypatch.setattr(module, "REPO", tmp_path)
+    started = {"root_token_id": "a" * 64, "task_ref": "attempt-1", "delivery_status": "delivered"}
+    monkeypatch.setattr(module, "compose", lambda *a, **k: json.dumps({"mint": started}) + "\n")
+    monkeypatch.setattr(module.sys, "argv", ["demo", "run", "reservation"])
+    module.main()
+    assert json.loads((tmp_path / ".runs/attempt-1.mint.json").read_text()) == started
+    output = capsys.readouterr().out
+    assert "aac-aeg render --mint-response" in output
+    assert str(synthetic_home / "agents/trip-planner/state/telemetry.jsonl") in output
+    assert str(synthetic_home / "agents/booking/state/actions.jsonl") in output
+    assert "AEG input mapping:" in output

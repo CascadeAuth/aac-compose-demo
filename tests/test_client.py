@@ -22,7 +22,7 @@ def evidence(module):
          "caveat_predicates": f"amount_max:8000,originator_reference:PO #4143,task_ref:{task},valid_until:{int(time.time())+1800}"},
         {**common, "actor_spiffe_id": signer},
         {**common, "result": "success", "agent_decision_action": "settle", "terminal_attestation": "fixture."+part+".fixture"},
-        {**common, "payload": {"offer": 8000}, "decision": decision},
+        {"token_id": common["token_id"], "action_payload": {"task_ref": task, "payload": {"offer": 8000}, "agent_decision": decision}},
         signer,
     ]
 
@@ -36,7 +36,7 @@ def test_correlated_result(client_module):
     (1, "terminal_attestation_verification", "absent"),
     (2, "root_token_id", "wrong"),
     (3, "token_id", "wrong"),
-    (4, "task_ref", "wrong"),
+    (4, "token_id", "wrong"),
     (2, "actor_spiffe_id", "spiffe://wrong.test/booking"),
 ])
 def test_ack_or_mismatched_evidence_is_not_success(client_module, index, key, value):
@@ -48,9 +48,9 @@ def test_ack_or_mismatched_evidence_is_not_success(client_module, index, key, va
 
 def test_signed_receipt_wrong_order_is_rejected(client_module):
     args = evidence(client_module)
-    summary = json.loads(args[4]["decision"]["action_summary"])
+    summary = json.loads(args[4]["action_payload"]["agent_decision"]["action_summary"])
     summary["order"] = "PO #9999"
-    args[4]["decision"]["action_summary"] = json.dumps(summary)
+    args[4]["action_payload"]["agent_decision"]["action_summary"] = json.dumps(summary)
     with pytest.raises(AssertionError):
         client_module.verify_result(*args)
 

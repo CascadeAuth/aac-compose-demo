@@ -51,7 +51,7 @@ git clone https://github.com/CascadeAuth/aac-compose-demo.git
 cd aac-compose-demo
 python3 -m venv .venv
 . .venv/bin/activate
-python -m pip install 'aac-cli==0.2.2'
+python -m pip install 'aac-cli==0.2.3'
 mkdir -p .local
 export AAC_CLI_HOME="$PWD/.local/aac"
 cp config/trip-planner.yaml .local/trip-planner.yaml
@@ -180,7 +180,41 @@ the old authority held by Tourfedia.
 Local `state/telemetry.jsonl` and `state/actions.jsonl` contain the protocol
 and business evidence. The demo operator controls both stacks and reads their
 records locally. This is not automatic access to another tenant's files.
-Central telemetry remains off here; enriched graph integration is separate.
+The supplied configuration enables metadata-only central forwarding through each
+profile's generated endpoint and its own mounted API-key file. Private business
+records, caps, expiry and receipts stay local. Forwarding is asynchronous; an
+actual root returned by `aac chain show` is the evidence that delivery occurred.
+
+### View this execution graph
+
+Install the public renderer on the setup host:
+
+```sh
+python -m pip install 'aac-aeg[online]==0.1.0'
+```
+
+Each `./demo run` now saves its successful mint response in `.runs/`, prints the
+order → scenario → task-reference → root mapping and prints a complete
+`aac-aeg render` command with the actual telemetry/action paths and HTML output.
+Run that printed command. Add `--profile vantis` to combine authorized central
+metadata with those local records in the same invocation. The resulting HTML
+opens without a server or network assets; double-click nodes for all actions,
+receipt evidence, limits and workload identities.
+
+To find earlier attempts, use `aac-aeg list --events <printed-planner-path>
+--actions <printed-planner-actions-path> --since 24h --output table`. Select its
+root with `--root-token-id`; do not combine the fresh-$9,500 root with the earlier
+$8,000 root merely because both concern PO #4143. Sender-only or receiver-only
+inputs produce a partial graph with missing evidence labeled. Local business
+records are application reports, not receipt-verification results.
+
+The applications emit the public eight-field `action_taken` format. When upgrading
+from the earlier demo, archive the old `actions.jsonl` files before starting a new
+run: those historical records used a different example-specific format. Retain
+those originals separately; the renderer reports mixed/invalid input by file and
+line. See the [AEG guide](https://cascadeauth.github.io/aac-starter-guide/aeg.html)
+for the schema, ordinary multi-file inputs, local run filters and interpretation.
+
 
 ## 5. Refusals and controlled attacks
 

@@ -17,6 +17,8 @@ def module(tmp_path, monkeypatch):
     secret.write_bytes(SECRET)
     monkeypatch.setenv("AAC_INVOKE_AUTH_SECRET_FILE", str(secret))
     monkeypatch.setenv("AAC_DEMO_ROLE", "booking")
+    monkeypatch.setenv("AAC_TENANT_ID", "tnt-22222222-2222-4222-8222-222222222222")
+    monkeypatch.setenv("AAC_WORKLOAD_SPIFFE_ID", "spiffe://tourfedia.example/booking")
     monkeypatch.setenv("AAC_DEMO_ACTIONS", str(tmp_path / "actions.jsonl"))
     monkeypatch.syspath_prepend(str(AGENT_DIR))
     sys.modules.pop("agent", None)
@@ -80,5 +82,6 @@ def test_callback_records_authenticated_root_and_token(module, tmp_path):
     with TestClient(module.app) as client:
         assert client.post("/invoke", headers=headers, content=raw).status_code == 200
     record = json.loads((tmp_path / "actions.jsonl").read_text())
-    assert record["root_token_id"] == "a"*64 and record["token_id"] == "b"*64
-    assert record["decision"]["action"] == "settle"
+    assert record["token_id"] == "b"*64 and "root_token_id" not in record
+    assert set(record) == {"timestamp_unix_seconds", "event_type", "tenant_id", "tenant_short", "token_id", "actor_spiffe_id", "action_summary", "action_payload"}
+    assert record["action_payload"]["agent_decision"]["action"] == "settle"
