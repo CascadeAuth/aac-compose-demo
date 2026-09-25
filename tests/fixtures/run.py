@@ -87,7 +87,14 @@ def receiver_checks():
         else:
             assert response.status_code == 200, response.text
             assert response.json()["chain_verification"] == "PASSED"
-            assert len(after) == len(before) + 1 and after[-1]["root_token_id"] == root
+            assert len(after) == len(before) + 1
+            action = after[-1]
+            assert action["action_payload"]["task_ref"] == task
+            # Application records identify tokens; sidecar evidence supplies roots.
+            assert any(event.get("event_type") == "receive"
+                       and event.get("root_token_id") == root
+                       and event.get("token_id") == action["token_id"]
+                       for event in rows(receiver, "telemetry.jsonl"))
             assert response.json()["status"] == ("refused" if receiver == "vantis" else "settled")
         report.append({"case": case, "root_token_id": root, "task_ref": task,
                        "http_status": response.status_code, "response": response.json(),
