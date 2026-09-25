@@ -95,7 +95,7 @@ def main():
         runs.mkdir(exist_ok=True)
         response_path = runs / (started["task_ref"] + ".mint.json")
         response_path.write_text(json.dumps(started, indent=2) + "\n")
-        command_line = ["aac-aeg", "render", "--mint-response", str(response_path)]
+        command_line = ["aeg", "render", "--mint-response", str(response_path)]
         for agent in AGENTS:
             state = Path(generated_env(agent)["AAC_AGENT_STATE_DIR"])
             command_line += ["--events", str(state / "telemetry.jsonl"), "--actions", str(state / "actions.jsonl")]

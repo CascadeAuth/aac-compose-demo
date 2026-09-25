@@ -51,7 +51,7 @@ git clone https://github.com/CascadeAuth/aac-compose-demo.git
 cd aac-compose-demo
 python3 -m venv .venv
 . .venv/bin/activate
-python -m pip install 'aac-cli==0.2.3'
+python -m pip install 'aac-cli==0.2.4'
 mkdir -p .local
 export AAC_CLI_HOME="$PWD/.local/aac"
 cp config/trip-planner.yaml .local/trip-planner.yaml
@@ -187,21 +187,22 @@ actual root returned by `aac chain show` is the evidence that delivery occurred.
 
 ### View this execution graph
 
-Install the public renderer on the setup host:
+The CLI installation above supplies both `aac` and `aeg`. Check the installed
+graph command on the setup host:
 
 ```sh
-python -m pip install 'aac-aeg[online]==0.1.0'
+aeg --version
 ```
 
 Each `./demo run` now saves its successful mint response in `.runs/`, prints the
 order → scenario → task-reference → root mapping and prints a complete
-`aac-aeg render` command with the actual telemetry/action paths and HTML output.
+`aeg render` command with the actual telemetry/action paths and HTML output.
 Run that printed command. Add `--profile vantis` to combine authorized central
 metadata with those local records in the same invocation. The resulting HTML
 opens without a server or network assets; double-click nodes for all actions,
 receipt evidence, limits and workload identities.
 
-To find earlier attempts, use `aac-aeg list --events <printed-planner-path>
+To find earlier attempts, use `aeg list --events <printed-planner-path>
 --actions <printed-planner-actions-path> --since 24h --output table`. Select its
 root with `--root-token-id`; do not combine the fresh-$9,500 root with the earlier
 $8,000 root merely because both concern PO #4143. Sender-only or receiver-only

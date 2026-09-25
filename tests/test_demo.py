@@ -57,7 +57,7 @@ def test_run_prints_exact_input_paths_and_saves_mint(synthetic_home, tmp_path, m
     module.main()
     assert json.loads((tmp_path / ".runs/attempt-1.mint.json").read_text()) == started
     output = capsys.readouterr().out
-    assert "aac-aeg render --mint-response" in output
+    assert "aeg render --mint-response" in output
     assert str(synthetic_home / "agents/trip-planner/state/telemetry.jsonl") in output
     assert str(synthetic_home / "agents/booking/state/actions.jsonl") in output
     assert "AEG input mapping:" in output
