@@ -105,7 +105,7 @@ def test_public_aeg_full_partial_and_forwarded_root():
     root = mapping["root_token_id"]
     planner = HOME / "agents/trip-planner/state"
     booking = HOME / "agents/booking/state"
-    listed = json.loads(run("aac-aeg", "list", "--events", str(planner / "telemetry.jsonl"),
+    listed = json.loads(run("aeg", "list", "--events", str(planner / "telemetry.jsonl"),
                             "--actions", str(planner / "actions.jsonl"),
                             "--task-ref", mapping["task_ref"], "--output", "json"))
     assert [chain["root_token_id"] for chain in listed["chains"]] == [root]
@@ -125,7 +125,7 @@ def test_public_aeg_full_partial_and_forwarded_root():
                                        ("hybrid", [planner], ["--profile", "vantis"]),
                                        ("central", [], ["--profile", "vantis"])):
         destination = REPO / ".runs" / (mapping["task_ref"] + "-" + label + ".html")
-        arguments = ["aac-aeg", "render", "--root-token-id", root, *profile]
+        arguments = ["aeg", "render", "--root-token-id", root, *profile]
         for directory in directories:
             arguments += ["--events", str(directory / "telemetry.jsonl"),
                           "--actions", str(directory / "actions.jsonl")]
