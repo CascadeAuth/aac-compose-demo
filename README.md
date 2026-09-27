@@ -51,7 +51,7 @@ git clone https://github.com/CascadeAuth/aac-compose-demo.git
 cd aac-compose-demo
 python3 -m venv .venv
 . .venv/bin/activate
-python -m pip install 'aac-cli==0.2.4'
+python -m pip install 'aac-cli==0.2.6'
 mkdir -p .local
 export AAC_CLI_HOME="$PWD/.local/aac"
 cp config/trip-planner.yaml .local/trip-planner.yaml
@@ -202,19 +202,82 @@ metadata with those local records in the same invocation. The resulting HTML
 opens without a server or network assets; double-click nodes for all actions,
 receipt evidence, limits and workload identities.
 
-To find earlier attempts, use `aeg list --events <printed-planner-path>
---actions <printed-planner-actions-path> --since 24h --output table`. Select its
-root with `--root-token-id`; do not combine the fresh-$9,500 root with the earlier
-$8,000 root merely because both concern PO #4143. Sender-only or receiver-only
-inputs produce a partial graph with missing evidence labeled. Local business
-records are application reports, not receipt-verification results.
+### Discover executions and select a root
 
-The applications emit the public eight-field `action_taken` format. When upgrading
-from the earlier demo, archive the old `actions.jsonl` files before starting a new
-run: those historical records used a different example-specific format. Retain
-those originals separately; the renderer reports mixed/invalid input by file and
-line. See the [AEG guide](https://cascadeauth.github.io/aac-starter-guide/aeg.html)
-for the schema, ordinary multi-file inputs, local run filters and interpretation.
+The supplied sources choose the mode: files alone are local, `--profile` alone
+queries the control plane, and both combine local evidence with authorized
+central observations. No local files are uploaded. These paths come from the
+demo's CLI-managed agent directory; use the paths printed by `./demo run` if
+your files are elsewhere.
+
+```sh
+EVENTS="$AAC_CLI_HOME/agents/trip-planner/state/telemetry.jsonl"
+ACTIONS="$AAC_CLI_HOME/agents/trip-planner/state/actions.jsonl"
+
+# Local evidence only; no network request.
+aeg list --events "$EVENTS" --actions "$ACTIONS" --since 24h --output table
+
+# Participant-visible central observations only.
+aeg list --profile vantis --since 24h --limit 50 --output table
+
+# Hybrid: join the two sources by the actual root token ID.
+aeg list --profile vantis --events "$EVENTS" --actions "$ACTIONS" --since 24h --limit 50 --max-pages 3 --output table
+```
+
+Each row's `sources` value is `local`, `control-plane` or `both`: it says what
+contributed to this query. A `local` row does not prove AAC never received it;
+time windows, later pages, late forwarding, access and query failures can all
+exclude a central contribution. Central times, hops and outcomes are observed
+metadata, not proof of complete forwarding or business completion.
+
+For an exact task reference, add `--task-ref TASK_REF` to the local or hybrid
+command, replacing `TASK_REF` with the value printed for that attempt. Only
+locally matching roots qualify. That option is refused with a profile alone,
+because private task references are not stored centrally. Actions without a
+root mapping produce diagnostics rather than guessed joins.
+
+For a fixed interval, choose UTC times covering your run and replace this
+example day. `--from` is inclusive and `--to` is exclusive; the same interval
+selects local and central activity. Online intervals are limited to 31 days.
+
+```sh
+aeg list --profile vantis --events "$EVENTS" --actions "$ACTIONS" --from 2026-09-25T00:00:00Z --to 2026-09-26T00:00:00Z --limit 50 --max-pages 3 --output json
+```
+
+Online listing defaults to one page. `--limit` sets the page size (1–200), and
+`--max-pages` bounds how many pages this invocation fetches (1–20). When the
+output provides a continuation token, replace `PAGE_TOKEN` below and continue
+with the same profile, files and task filter, omitting `--since`. A continuation
+reuses its bound interval and page size. Tokens expire after 15 minutes; restart
+the original query when one expires.
+
+```sh
+aeg list --profile vantis --events "$EVENTS" --actions "$ACTIONS" --page-token PAGE_TOKEN --max-pages 3 --output table
+```
+
+Continuation calls may repeat local rows; source labels describe each call's
+contributions. `exhausted` means no further query pages, not complete evidence.
+A failed central fetch exits 4 and reports partial coverage/diagnostics with
+recoverable rows. Retry a token only for a transient failure; restart the
+original query after a rejected or expired token. Do not treat failure as an
+empty successful result. A failed bare continuation cannot select local rows
+until its interval is known. Invalid arguments or local evidence exit 2.
+
+Choose a listed root and replace `ROOT_ID` below. Keep separate attempts
+separate: the fresh-$9,500 root and earlier $8,000 root are distinct even when
+both concern PO #4143.
+
+```sh
+aeg render --profile vantis --events "$EVENTS" --actions "$ACTIONS" --root-token-id ROOT_ID --output .runs/selected.html
+```
+
+Omit the profile for an offline render, or omit the files for a central-only
+render. Sender-only or receiver-only inputs produce a partial graph with
+missing evidence labeled. Local business records are application reports,
+not receipt-verification results. The applications emit the public eight-field
+`action_taken` format; malformed inputs are reported by file and line.
+See the [AEG guide](https://cascadeauth.github.io/aac-starter-guide/aeg.html)
+for the schema, source modes, filtering, continuation and interpretation.
 
 
 ## 5. Refusals and controlled attacks
