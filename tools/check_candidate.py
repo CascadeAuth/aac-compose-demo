@@ -61,7 +61,7 @@ def python_requirements(component, artifacts, current):
         packages.append(components.package_spec(component, {"url": wheels[0].resolve().as_uri(), "sha256": digest(wheels[0])}))
     deps = [line for line in (ROOT / "tests/requirements.txt").read_text().splitlines()
             if line and not line.startswith(("#", "aac-"))]
-    return [*packages, *deps, "uvicorn==0.52.4"], candidate_version
+    return [*packages, *deps], candidate_version
 
 
 def check(component, artifacts, receipt, source):

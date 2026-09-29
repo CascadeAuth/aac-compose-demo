@@ -296,8 +296,8 @@ This explicit test driver uses CLI-issued test material and the public
 `cryptography==50.0.1` package. Its isolated container mounts the two test
 identities; the normal applications never receive those private keys.
 The driver constructs the attack chains itself using a test-only copy of the
-AAC v1 wire encoding accepted by sidecar v0.4.1. Keep it aligned with the tested
-sidecar release; its positive controls must pass before an attack result counts.
+AAC v1 wire encoding. Its positive controls must pass against the sidecar
+release recorded in `.local/components.json` before an attack result counts.
 
 It checks both chain-start aliases: absent, wrong-pair and altered signatures
 must fail before any successful mint or application invocation. It constructs
