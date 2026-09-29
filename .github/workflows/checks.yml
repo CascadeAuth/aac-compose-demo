@@ -23,4 +23,4 @@ jobs:
       - run: python -m py_compile demo agent/*.py tests/fixtures/*.py
       - run: python -m pytest tests -q --ignore tests/live
       # The sample agent image must build from a clean checkout.
-      - run: docker build --quiet agent
+      - run: docker build --quiet --build-arg AAC_INVOKE_AUTH_VERSION=$(python components.py --invoke-version) agent

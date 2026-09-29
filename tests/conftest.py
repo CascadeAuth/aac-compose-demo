@@ -60,3 +60,13 @@ def synthetic_home(tmp_path):
         (paths.root / "public-status.json").write_text(json.dumps({"tenant_id": tenant_id,
             "workload_spiffe_id": record.workload_spiffe_id, "root_key_id": record.root_key_id}))
     return home
+
+
+@pytest.fixture(autouse=True)
+def selected_components(monkeypatch):
+    import components
+    monkeypatch.setattr(components, "selected", lambda root: {
+        "sidecar": {"image": "docker.io/cascadeauth/aac-sidecar@sha256:" + "1" * 64},
+        "publisher": {"image": "ghcr.io/cascadeauth/aac-trust-anchor-publisher@sha256:" + "2" * 64},
+        "packages": {"aac-invoke-auth": {"version": "0.1.2"}},
+    })
