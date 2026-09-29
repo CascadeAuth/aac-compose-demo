@@ -51,7 +51,7 @@ git clone https://github.com/CascadeAuth/aac-compose-demo.git
 cd aac-compose-demo
 python3 -m venv .venv
 . .venv/bin/activate
-python -m pip install 'aac-cli==0.2.6'
+./demo prepare
 mkdir -p .local
 export AAC_CLI_HOME="$PWD/.local/aac"
 cp config/trip-planner.yaml .local/trip-planner.yaml
@@ -71,6 +71,14 @@ Development-issued certificates do not require development exceptions.
 Each pair shares its own loopback interface; the sidecars communicate over a
 private Docker network using HTTPS names `trip-planner` and `booking`.
 No host ports are published.
+
+`./demo prepare` requires public aac-cli 0.2.7 or later and resolves current stable AAC package releases from PyPI and the
+sidecar from the published release record, then resolves exact container digests.
+It saves `.local/components.json` and installs the selected CLI in your active
+virtual environment. Subsequent starts and maintenance reuse that file; they
+never silently change a running demo. To start a new run with newer components,
+stop the demo, retain the old receipt, and move the selection file aside before
+running `./demo prepare` again. There is no mutable sidecar `latest` tag.
 
 ## 2. Register two tenants
 
@@ -99,14 +107,12 @@ Read the registered facts through supported CLI status output:
 ```sh
 aac agent status --agent trip-planner --output json > .local/vantis-status.json
 aac agent status --agent booking --output json > .local/tourfedia-status.json
-value() { python -c 'import json,sys; print(json.load(open(sys.argv[1]))[sys.argv[2]])' "$1" "$2"; }
-VANTIS_TENANT=$(value .local/vantis-status.json tenant_id)
-VANTIS_DOMAIN=$(value .local/vantis-status.json hosted_trust_domain)
-VANTIS_ID=$(value .local/vantis-status.json workload_spiffe_id)
-TOURFEDIA_TENANT=$(value .local/tourfedia-status.json tenant_id)
-TOURFEDIA_DOMAIN=$(value .local/tourfedia-status.json hosted_trust_domain)
-TOURFEDIA_ID=$(value .local/tourfedia-status.json workload_spiffe_id)
-test "$VANTIS_TENANT" != "$TOURFEDIA_TENANT"
+VANTIS_TENANT=$(aac agent status --agent trip-planner --field tenant-id)
+VANTIS_DOMAIN=$(aac agent status --agent trip-planner --field hosted-trust-domain)
+VANTIS_ID=$(aac agent status --agent trip-planner --field workload-spiffe-id)
+TOURFEDIA_TENANT=$(aac agent status --agent booking --field tenant-id)
+TOURFEDIA_DOMAIN=$(aac agent status --agent booking --field hosted-trust-domain)
+TOURFEDIA_ID=$(aac agent status --agent booking --field workload-spiffe-id)
 ```
 
 Append these sections **once** to the input copies. The peer's public CA
@@ -290,8 +296,8 @@ This explicit test driver uses CLI-issued test material and the public
 `cryptography==50.0.1` package. Its isolated container mounts the two test
 identities; the normal applications never receive those private keys.
 The driver constructs the attack chains itself using a test-only copy of the
-AAC v1 wire encoding accepted by sidecar v0.4.1. Keep it aligned with the tested
-sidecar release; its positive controls must pass before an attack result counts.
+AAC v1 wire encoding. Its positive controls must pass against the sidecar
+release recorded in `.local/components.json` before an attack result counts.
 
 It checks both chain-start aliases: absent, wrong-pair and altered signatures
 must fail before any successful mint or application invocation. It constructs
@@ -408,8 +414,11 @@ The distinct receipt key is not an enforced certificate-role isolation boundary.
 
 ## Tests and recorded evidence
 
+`prepare --tests` installs the test dependencies and AAC helpers matching the
+existing run selection. It retains the selected CLI and component receipt.
+
 ```sh
-python -m pip install -r tests/requirements.txt
+./demo prepare --tests
 python -m pytest tests -q --ignore tests/live
 AAC_DEMO_LIVE=1 python -m pytest tests/live -q
 # Explicitly enable configuration and certificate lifecycle mutations:

@@ -1,8 +1,6 @@
-# Test dependencies. CLI and invoke-auth versions match the installation
-# commands in README.md and agent/Dockerfile.
+# Third-party test dependencies. ./demo prepare --tests installs the frozen AAC selection.
 pytest==9.0.2
-aac-cli==0.2.6
-aac-invoke-auth[fastapi]==0.1.2
 httpx==0.28.1
 PyYAML==6.0.3
 markdown-it-py==4.0.0
+uvicorn==0.52.4

@@ -66,3 +66,15 @@ def test_rendered_requirements_link_every_component():
     for text, unlinked in table.cells[::2]:
         assert text.strip() and not unlinked.strip(" / ")
     assert "Version used here" not in rendered
+
+
+def test_prescribed_journey_has_no_inline_python_and_uses_every_scalar():
+    text = (ROOT / "README.md").read_text()
+    assert not re.search(r"\bpython(?:3)?\s+(?:-[A-Za-z]*c\b|(?:-\s*)?<<|-(?:\s|$))", text)
+    assert "value()" not in text
+    for agent in ("trip-planner", "booking"):
+        for field in ("tenant-id", "hosted-trust-domain", "workload-spiffe-id"):
+            assert f"aac agent status --agent {agent} --field {field}" in text
+    rendered = MarkdownIt("commonmark").render(text)
+    assert "python -c" not in rendered and "value()" not in rendered
+    assert "./demo prepare" in text and "components.json" in text

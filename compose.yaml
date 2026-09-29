@@ -5,7 +5,10 @@ x-user: &user "${AAC_DEMO_UID:?}:${AAC_DEMO_GID:?}"
 
 services:
   agent:
-    build: ./agent
+    build:
+      context: ./agent
+      args:
+        AAC_INVOKE_AUTH_VERSION: ${AAC_DEMO_INVOKE_AUTH_VERSION:?Run ./demo prepare}
     image: aac-compose-demo-agent:local
     user: *user
     environment:
@@ -23,7 +26,7 @@ services:
         aliases: ["${AAC_DEMO_ROLE:?}"]
 
   sidecar:
-    image: docker.io/cascadeauth/aac-sidecar:v0.4.1
+    image: ${AAC_DEMO_SIDECAR_IMAGE:?Run ./demo prepare}
     user: *user
     network_mode: service:agent
     depends_on: [agent]
@@ -36,7 +39,7 @@ services:
       - {type: bind, source: "${AAC_AGENT_STATE_DIR:?}", target: /var/lib/aac}
 
   publisher:
-    image: ghcr.io/cascadeauth/aac-trust-anchor-publisher:0.2.3
+    image: ${AAC_DEMO_PUBLISHER_IMAGE:?Run ./demo prepare}
     user: *user
     environment:
       AAC_TAP_TENANT_ID: ${AAC_TENANT_ID:?}
