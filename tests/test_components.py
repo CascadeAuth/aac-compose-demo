@@ -40,3 +40,21 @@ def test_prepare_reuses_run_without_resolving_new_versions(tmp_path, monkeypatch
     assert len(installs) == 2 and installs[0] == installs[1]
     assert installs[0][-1].endswith("#sha256=" + "3"*64)
     assert (tmp_path / ".local/components.json").read_bytes() == before
+
+
+def test_test_setup_preserves_the_frozen_aac_selection(tmp_path, monkeypatch):
+    record = {"packages": {name: {"version": "0.8.8", "url": f"https://files.pythonhosted.org/{name}.whl", "sha256": "3"*64}
+                           for name in components.PACKAGES}, "sidecar": {}, "publisher": {}}
+    path = tmp_path / ".local/components.json"; path.parent.mkdir(); path.write_text(json.dumps(record))
+    before = path.read_bytes()
+    monkeypatch.setattr(components.sys, "prefix", "active-venv")
+    monkeypatch.setattr(components, "selected", lambda root: json.loads(path.read_text()))
+    monkeypatch.setattr(components, "resolve", lambda: pytest.fail("test setup re-resolved the run"))
+    installs = []
+    monkeypatch.setattr(components.subprocess, "run", lambda argv, **kw: installs.append(argv))
+    components.prepare(tmp_path, tests=True)
+    assert path.read_bytes() == before
+    for name in components.PACKAGES:
+        assert any(record["packages"][name]["url"] in arg for arg in installs[0])
+    assert any(arg.startswith("aac-invoke-auth[fastapi] @ ") for arg in installs[0])
+    assert not any(line.startswith("aac-") for line in (components.Path(__file__).parent / "requirements.txt").read_text().splitlines())

@@ -61,7 +61,12 @@ def compose_values(record):
             "AAC_DEMO_INVOKE_AUTH_VERSION": record["packages"]["aac-invoke-auth"]["version"]}
 
 
-def prepare(root):
+def package_spec(name, metadata):
+    extra = "[fastapi]" if name == "aac-invoke-auth" else ""
+    return f"{name}{extra} @ {metadata['url']}#sha256={metadata['sha256']}"
+
+
+def prepare(root, *, tests=False):
     if sys.prefix == sys.base_prefix:
         raise ValueError("activate your demo virtual environment first")
     path = root / ".local/components.json"
@@ -75,8 +80,11 @@ def prepare(root):
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("x") as stream:
             json.dump(record, stream, indent=2); stream.write("\n")
-    cli = record["packages"]["aac-cli"]
-    subprocess.run([sys.executable, "-m", "pip", "install", cli["url"] + "#sha256=" + cli["sha256"]], check=True)
+    names = PACKAGES if tests else ("aac-cli",)
+    specs = [package_spec(name, record["packages"][name]) for name in names]
+    if tests:
+        specs += ["-r", str(root / "tests/requirements.txt")]
+    subprocess.run([sys.executable, "-m", "pip", "install", *specs], check=True)
     print("Run selection: " + str(path))
     print(json.dumps({"packages": {k: v["version"] for k, v in record["packages"].items()},
                       "sidecar": record["sidecar"], "publisher": record["publisher"]}, indent=2))
@@ -84,8 +92,5 @@ def prepare(root):
 
 if __name__ == "__main__":
     if sys.argv[1:] != ["--invoke-version"]:
-        raise SystemExit("Use ./demo prepare; --invoke-version is the build-only current package lookup")
-    version = read_json("https://pypi.org/pypi/aac-invoke-auth/json")["info"]["version"]
-    if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", version):
-        raise ValueError("expected stable invoke-auth version")
-    print(version)
+        raise SystemExit("Use ./demo prepare; --invoke-version is the frozen build-version lookup after ./demo prepare")
+    print(selected(Path(__file__).resolve().parent)["packages"]["aac-invoke-auth"]["version"])

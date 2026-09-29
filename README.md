@@ -414,8 +414,11 @@ The distinct receipt key is not an enforced certificate-role isolation boundary.
 
 ## Tests and recorded evidence
 
+`prepare --tests` installs the test dependencies and AAC helpers matching the
+existing run selection. It retains the selected CLI and component receipt.
+
 ```sh
-python -m pip install -r tests/requirements.txt
+./demo prepare --tests
 python -m pytest tests -q --ignore tests/live
 AAC_DEMO_LIVE=1 python -m pytest tests/live -q
 # Explicitly enable configuration and certificate lifecycle mutations:

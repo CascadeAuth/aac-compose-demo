@@ -74,7 +74,9 @@ def main():
     if not args:
         print(__doc__)
     elif args[0] == "prepare":
-        components.prepare(REPO)
+        if args[1:] not in ([], ["--tests"]):
+            raise ValueError("Use ./demo prepare [--tests]")
+        components.prepare(REPO, tests=args[1:] == ["--tests"])
     elif args[0] == "compose":
         compose(args[1], *args[2:])
     elif args[0] == "up":

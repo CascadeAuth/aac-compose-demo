@@ -19,8 +19,11 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-      - run: python -m pip install --quiet -r tests/requirements.txt
-      - run: python -m py_compile demo agent/*.py tests/fixtures/*.py
-      - run: python -m pytest tests -q --ignore tests/live
-      # The sample agent image must build from a clean checkout.
-      - run: docker build --quiet --build-arg AAC_INVOKE_AUTH_VERSION=$(python components.py --invoke-version) agent
+      # This consumer activates after its required public CLI release.
+      - run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          ./demo prepare --tests
+          python -m py_compile demo agent/*.py tests/fixtures/*.py
+          python -m pytest tests -q --ignore tests/live
+          docker build --quiet --build-arg AAC_INVOKE_AUTH_VERSION=$(python components.py --invoke-version) agent

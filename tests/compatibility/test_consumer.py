@@ -51,7 +51,8 @@ def wait(predicate, processes, logs):
     pytest.fail("consumer timed out: " + "\n".join(p.read_text() for p in logs))
 
 
-def test_installed_cli_peer_configuration_and_verified_reservation(tmp_path, monkeypatch, capsys):
+@pytest.mark.parametrize("omit_peer_ca", [False, True], ids=["verified-reservation", "missing-peer-ca-refused"])
+def test_installed_cli_peer_configuration_and_verified_reservation(tmp_path, monkeypatch, capsys, omit_peer_ca):
     home = tmp_path / "home"
     monkeypatch.setenv("AAC_CLI_HOME", str(home))
     tenants = {}
@@ -108,13 +109,22 @@ def test_installed_cli_peer_configuration_and_verified_reservation(tmp_path, mon
             for field in ("tenant-id", "hosted-trust-domain", "workload-spiffe-id"):
                 assert main(["agent", "status", "--agent", agent, "--field", field]) == 0
                 assert capsys.readouterr().out == statuses[agent][field.replace("-", "_")] + "\n"
-        planner, booking = statuses["trip-planner"], statuses["booking"]
-        config = yaml.safe_load(inputs["trip-planner"].read_text())
-        config["destinations"] = {"tourfedia": {"url": f"https://127.0.0.1:{ports['booking'][2]}/v1/agent/receive",
-            "audience_pattern": booking["workload_spiffe_id"], "predicates": {}, "valid_for": "+30m", "timeout_ms": 10000}}
-        inputs["trip-planner"].write_text(yaml.safe_dump(config))
-        assert main(["init", "--profile", "trip-planner", "--agent", "trip-planner", "--agent-config", str(inputs["trip-planner"])]) == 0
-        capsys.readouterr()
+        for agent, peer in (("trip-planner", "booking"), ("booking", "trip-planner")):
+            peer_status = statuses[peer]
+            config = yaml.safe_load(inputs[agent].read_text())
+            config["trust_anchors"] = {"tenant_ids": [peer_status["tenant_id"]]}
+            config["spiffe_bundles"] = {"trust_domains": [peer_status["hosted_trust_domain"]]}
+            config["https_trust"] = {"ca_files": [] if omit_peer_ca and agent == "trip-planner" else
+                                    [str(home / "agents" / peer / "agent/ca.crt")]}
+            if agent == "trip-planner":
+                config["destinations"] = {"tourfedia": {"url": f"https://127.0.0.1:{ports['booking'][2]}/v1/agent/receive",
+                    "audience_pattern": peer_status["workload_spiffe_id"], "valid_for": "+30m", "timeout_ms": 10000}}
+            inputs[agent].write_text(yaml.safe_dump(config))
+            assert main(["init", "--profile", agent, "--agent", agent, "--agent-config", str(inputs[agent])]) == 0
+            capsys.readouterr()
+            rendered = yaml.safe_load((home / "agents" / agent / "sidecar-config.yaml").read_text())
+            assert peer_status["tenant_id"] in rendered["trust_anchors"]["tenant_ids"]
+            assert peer_status["hosted_trust_domain"] in rendered["spiffe_bundles"]["trust_domains"]
     # Exercise the installed publisher's real daemon and signed HTTP uploads.
     published, publication_errors = {}, []
     decode = lambda value: base64.urlsafe_b64decode(value + "=" * (-len(value) % 4))
@@ -197,9 +207,6 @@ def test_installed_cli_peer_configuration_and_verified_reservation(tmp_path, mon
             config["spiffe_bundles"] = {"source": "filesystem", "directory": str(bundles)}
             config["workload_projection"] = {"source": "static", "static_workloads": {
                 item["workload_spiffe_id"]: item["tenant_id"] for item in statuses.values()}}
-            # Both independent issuer roots are public trust in this fixture.
-            ca = folder / "sidecar/outbound-ca.pem"
-            ca.write_bytes(b"".join(path.read_bytes() for path in bundles.glob("*.pem")))
             config_file = tmp_path / (agent + "-runtime.yaml"); config_file.write_text(yaml.safe_dump(config))
             env = {**os.environ, "AAC_DEMO_ROLE": agent, "AAC_TENANT_ID": status["tenant_id"],
                    "AAC_WORKLOAD_SPIFFE_ID": status["workload_spiffe_id"],
@@ -224,6 +231,12 @@ def test_installed_cli_peer_configuration_and_verified_reservation(tmp_path, mon
         assert response.status_code == 200, response.text
         started = response.json(); root = started["root_token_id"]
         sender = folder / "state"; receiver = home / "agents/booking/state"
+        if omit_peer_ca:
+            wait(lambda: any(e.get("event_type") == "dispatch" for e in client.matching(sender, "telemetry.jsonl", root, task)), processes, logs)
+            dispatch = next(e for e in client.matching(sender, "telemetry.jsonl", root, task) if e["event_type"] == "dispatch")
+            assert dispatch["result"] != "success"
+            assert not client.matching(receiver, "telemetry.jsonl", root, task)
+            return
         def finished():
             sent = client.matching(sender, "telemetry.jsonl", root, task)
             got = client.matching(receiver, "telemetry.jsonl", root, task)

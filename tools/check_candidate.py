@@ -43,6 +43,27 @@ def verify(receipt, source, artifacts):
     return record
 
 
+def python_requirements(component, artifacts, current):
+    packages = []
+    candidate_version = None
+    for name, metadata in current["packages"].items():
+        if name != component:
+            packages.append(components.package_spec(name, metadata))
+    if component != "sidecar":
+        wheels = [p for p in artifacts if p.suffix == ".whl"]
+        if len(wheels) != 1:
+            raise ValueError("exactly one candidate wheel is required")
+        with zipfile.ZipFile(wheels[0]) as archive:
+            metadata = BytesParser().parsebytes(archive.read(next(n for n in archive.namelist() if n.endswith(".dist-info/METADATA"))))
+        if metadata["Name"] != component:
+            raise ValueError("candidate wheel belongs to a different component")
+        candidate_version = metadata["Version"]
+        packages.append(components.package_spec(component, {"url": wheels[0].resolve().as_uri(), "sha256": digest(wheels[0])}))
+    deps = [line for line in (ROOT / "tests/requirements.txt").read_text().splitlines()
+            if line and not line.startswith(("#", "aac-"))]
+    return [*packages, *deps, "uvicorn==0.52.4"], candidate_version
+
+
 def check(component, artifacts, receipt, source):
     if not artifacts or any(not path.is_file() for path in artifacts):
         raise ValueError("candidate artifacts are required")
@@ -58,23 +79,10 @@ def check(component, artifacts, receipt, source):
             work = Path(directory)
             venv.EnvBuilder(with_pip=True).create(work / "venv")
             python = work / "venv/bin/python"
-            packages = []
-            for name, metadata in current["packages"].items():
-                if name != component:
-                    packages.append(metadata["url"] + "#sha256=" + metadata["sha256"])
-            if component != "sidecar":
-                wheels = [p for p in artifacts if p.suffix == ".whl"]
-                if len(wheels) != 1:
-                    raise ValueError("exactly one candidate wheel is required")
-                with zipfile.ZipFile(wheels[0]) as archive:
-                    metadata = BytesParser().parsebytes(archive.read(next(n for n in archive.namelist() if n.endswith(".dist-info/METADATA"))))
-                if metadata["Name"] != component:
-                    raise ValueError("candidate wheel belongs to a different component")
-                record["candidate_version"] = metadata["Version"]
-                packages.append(str(wheels[0].resolve()))
-            deps = [line for line in (ROOT / "tests/requirements.txt").read_text().splitlines()
-                    if line and not line.startswith(("#", "aac-"))]
-            run(str(python), "-m", "pip", "install", *packages, *deps, "uvicorn==0.52.4")
+            packages, version = python_requirements(component, artifacts, current)
+            if version is not None:
+                record["candidate_version"] = version
+            run(str(python), "-m", "pip", "install", *packages)
             binary = artifacts[0].resolve() if component == "sidecar" else work / "aac-sidecar"
             if component != "sidecar":
                 image = current["sidecar"]["image"]
