@@ -1,5 +1,10 @@
 # AAC: two tenants, one reservation made
 
+Marc Sterling, a director at Austin-based private equity firm Vantis Equity,
+needs to oversee an acquisition on-site in Shanghai. He uses Tourfedia's
+corporate travel management platform to organize his trip from Austin (AUS)
+to Shanghai (PVG).
+
 Vantis Equity's trip-planner asks Tourfedia's booking workload to create a
 **reservation**. Each fictional organization has its own AAC
 tenant, assigned trust domain, CA, public trust publication and private keys.
@@ -19,8 +24,9 @@ not another delegation or another business agent.
 
 ## Requirements
 
-macOS or Linux, Python 3.11+, Docker with Compose, and two stage developer
-tenants you control. Registration requires interactive GitHub sign-in.
+macOS or Linux, Git, Python 3.11+ and Docker with Compose. You will register
+two stage developer tenants you control. Registration requires interactive
+GitHub sign-in.
 The two tenants can have the same human owner. A contact email is registration
 metadata; it does not select your GitHub account.
 
@@ -28,29 +34,45 @@ metadata; it does not select your GitHub account.
 |---|---|
 | [aac-cli on PyPI](https://pypi.org/project/aac-cli/) | Install in your host Python environment |
 | [AAC sidecar on Docker Hub](https://hub.docker.com/r/cascadeauth/aac-sidecar/) | Compose pulls the selected immutable image |
-| [Trust-anchor publisher on GHCR](https://github.com/orgs/CascadeAuth/packages/container/package/aac-trust-anchor-publisher) | Compose pulls the selected image |
+| [Trust anchor publisher on GHCR](https://github.com/orgs/CascadeAuth/packages/container/package/aac-trust-anchor-publisher) / [Python package and operating guide on PyPI](https://pypi.org/project/aac-trust-anchor-publisher/) | Compose pulls the selected image |
 | [aac-invoke-auth on PyPI](https://pypi.org/project/aac-invoke-auth/) | Installed inside the application image |
 | [Python application image](https://hub.docker.com/_/python) | Application base image; host Python is also required for the CLI |
 | [uvicorn](https://pypi.org/project/uvicorn/) / [httpx](https://pypi.org/project/httpx/) | Installed inside the application image |
 
 Current AAC installation metadata is published in the
-[released-component record](https://cascadeauth.github.io/aac-starter-guide/released-components.json).
+[released-component record](https://docs.cascadeauth.com/released-components.json).
 The exact combination exercised by this demo remains in Compose, the Dockerfile,
 test dependencies and [test receipts](docs/evidence/README.md). Component updates
 must pass the demo's compatibility checks; changing a guide does not change a
 recorded run or silently select a different container.
 
 No private repository or AAC SDK is required. The applications build locally
-from this public source. See the [AAC guide](https://cascadeauth.github.io/aac-starter-guide/)
+from this public source. See the [AAC guide](https://docs.cascadeauth.com/)
 for protocol/configuration reference and production deployment choices.
 
-## 1. Install and declare each agent
+## 1. Install AAC CLI and prepare the example
+
+### Install AAC CLI
+
+Install [aac-cli from PyPI](https://pypi.org/project/aac-cli/) in a virtual
+environment. The package supplies both `aac` and `aeg`; its PyPI page also
+contains installation and usage documentation.
+
+```sh
+python3 -m venv .aac-tools
+. .aac-tools/bin/activate
+python -m pip install --upgrade aac-cli
+aac --version
+aeg --version
+```
+
+### Prepare the Docker Compose example
+
+Keep that virtual environment active, then download and prepare the example:
 
 ```sh
 git clone https://github.com/CascadeAuth/aac-compose-demo.git
 cd aac-compose-demo
-python3 -m venv .venv
-. .venv/bin/activate
 ./demo prepare
 mkdir -p .local
 export AAC_CLI_HOME="$PWD/.local/aac"
@@ -72,7 +94,7 @@ Each pair shares its own loopback interface; the sidecars communicate over a
 private Docker network using HTTPS names `trip-planner` and `booking`.
 No host ports are published.
 
-`./demo prepare` requires public aac-cli 0.2.7 or later and resolves current stable AAC package releases from PyPI and the
+`./demo prepare` resolves the current stable AAC package releases from PyPI and the
 sidecar from the published release record, then resolves exact container digests.
 It saves `.local/components.json` and installs the selected CLI in your active
 virtual environment. Subsequent starts and maintenance reuse that file; they
@@ -87,8 +109,28 @@ Set your real contact addresses:
 ```sh
 export VANTIS_CONTACT='you+vantis@example.com'
 export TOURFEDIA_CONTACT='you+tourfedia@example.com'
-aac init --profile vantis --agent trip-planner --agent-config .local/trip-planner.yaml --layout container --admin-url https://api.stage.cascadeauth.dev --data-plane-url https://api.stage.cascadeauth.dev --trust-url https://trust.stage.cascadeauth.dev --idp github --display-name 'Vantis Equity Demo' --contact "$VANTIS_CONTACT"
-aac init --profile tourfedia --agent booking --agent-config .local/booking.yaml --layout container --admin-url https://api.stage.cascadeauth.dev --data-plane-url https://api.stage.cascadeauth.dev --trust-url https://trust.stage.cascadeauth.dev --idp github --display-name 'Tourfedia Demo' --contact "$TOURFEDIA_CONTACT"
+aac init \
+  --profile vantis \
+  --agent trip-planner \
+  --agent-config .local/trip-planner.yaml \
+  --layout container \
+  --admin-url https://api.stage.cascadeauth.dev \
+  --data-plane-url https://api.stage.cascadeauth.dev \
+  --trust-url https://trust.stage.cascadeauth.dev \
+  --idp github \
+  --display-name 'Vantis Equity Demo' \
+  --contact "$VANTIS_CONTACT"
+aac init \
+  --profile tourfedia \
+  --agent booking \
+  --agent-config .local/booking.yaml \
+  --layout container \
+  --admin-url https://api.stage.cascadeauth.dev \
+  --data-plane-url https://api.stage.cascadeauth.dev \
+  --trust-url https://trust.stage.cascadeauth.dev \
+  --idp github \
+  --display-name 'Tourfedia Demo' \
+  --contact "$TOURFEDIA_CONTACT"
 ```
 
 Run interactively and acknowledge each permanent tenant registration. There
@@ -247,7 +289,15 @@ example day. `--from` is inclusive and `--to` is exclusive; the same interval
 selects local and central activity. Online intervals are limited to 31 days.
 
 ```sh
-aeg list --profile vantis --events "$EVENTS" --actions "$ACTIONS" --from 2026-09-25T00:00:00Z --to 2026-09-26T00:00:00Z --limit 50 --max-pages 3 --output json
+aeg list \
+  --profile vantis \
+  --events "$EVENTS" \
+  --actions "$ACTIONS" \
+  --from 2026-09-25T00:00:00Z \
+  --to 2026-09-26T00:00:00Z \
+  --limit 50 \
+  --max-pages 3 \
+  --output json
 ```
 
 Online listing defaults to one page. `--limit` sets the page size (1–200), and
@@ -282,7 +332,7 @@ render. Sender-only or receiver-only inputs produce a partial graph with
 missing evidence labeled. Local business records are application reports,
 not receipt-verification results. The applications emit the public eight-field
 `action_taken` format; malformed inputs are reported by file and line.
-See the [AEG guide](https://cascadeauth.github.io/aac-starter-guide/aeg.html)
+See the [AEG guide](https://docs.cascadeauth.com/aeg/)
 for the schema, source modes, filtering, continuation and interpretation.
 
 

@@ -12,7 +12,7 @@ def test_listing_and_selected_render_examples_use_the_released_interface():
     commands = []
     for block in MarkdownIt("commonmark").parse(section):
         if block.type == "fence" and block.info == "sh":
-            for line in block.content.splitlines():
+            for line in block.content.replace("\\\n", "").splitlines():
                 if line.startswith("aeg "):
                     argv = shlex.split(line)
                     commands.append((argv, parser().parse_args(argv[1:])))

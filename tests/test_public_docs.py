@@ -15,7 +15,7 @@ def test_reservation_narrative_and_boundary():
     normalized = " ".join(readme.split())
     assert normalized.count("supplier integration and payment are omitted for clarity") == 1
     assert "not a guaranteed price hold" in normalized
-    assert "https://cascadeauth.github.io/aac-starter-guide/" in readme
+    assert "https://docs.cascadeauth.com/" in readme
 
 
 def test_every_named_requirement_is_linked_and_explains_where_it_runs():
