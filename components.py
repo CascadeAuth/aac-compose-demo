@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 from urllib.request import urlopen
 
-SITE = "https://cascadeauth.github.io/aac-starter-guide/released-components.json"
+SITE = "https://docs.cascadeauth.com/released-components.json"
 PACKAGES = ("aac-cli", "aac-invoke-auth", "aac-trust-anchor-publisher")
 
 
