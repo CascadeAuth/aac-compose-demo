@@ -64,7 +64,8 @@ def python_requirements(component, artifacts, current):
     return [*packages, *deps], candidate_version
 
 
-def check(component, artifacts, receipt, source):
+def check(component, artifacts, receipt, source, *, selection=None,
+          sidecar_binary=None, sidecar_sha256=None):
     if not artifacts or any(not path.is_file() for path in artifacts):
         raise ValueError("candidate artifacts are required")
     record = {"schema_version": 1, "passed": False, "component": component,
@@ -73,7 +74,24 @@ def check(component, artifacts, receipt, source):
               "demo_revision": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()}
     receipt.parent.mkdir(parents=True, exist_ok=True)
     try:
-        current = components.resolve()
+        if component == "sidecar" and (sidecar_binary is not None or sidecar_sha256 is not None):
+            raise ValueError("sidecar candidates use their candidate artifact, not a supplied companion binary")
+        if (sidecar_binary is None) != (sidecar_sha256 is None):
+            raise ValueError("supply both --sidecar-binary and --sidecar-sha256")
+        if sidecar_binary is not None:
+            if digest(sidecar_binary) != sidecar_sha256:
+                raise ValueError("supplied sidecar binary differs from the expected SHA256")
+        if selection is not None:
+            # Explicit pins must not silently fall back to registry discovery.
+            current = components.load_selection(selection)
+            record["selection_sha256"] = digest(selection)
+            if component != "sidecar" and sidecar_binary is None:
+                raise ValueError("a supplied selection requires a supplied sidecar binary for companion checks")
+        elif component == "sidecar" or sidecar_binary is not None:
+            current = components.resolve_packages()
+        else:
+            # PR3 migrates existing companion callers to the supplied interface.
+            current = components.resolve()
         record["companions"] = current
         with tempfile.TemporaryDirectory(prefix="aac-demo-consumer-") as directory:
             work = Path(directory)
@@ -83,8 +101,11 @@ def check(component, artifacts, receipt, source):
             if version is not None:
                 record["candidate_version"] = version
             run(str(python), "-m", "pip", "install", *packages)
-            binary = artifacts[0].resolve() if component == "sidecar" else work / "aac-sidecar"
-            if component != "sidecar":
+            binary = (artifacts[0].resolve() if component == "sidecar" else
+                      sidecar_binary.resolve() if sidecar_binary is not None else work / "aac-sidecar")
+            record["sidecar_source"] = ("candidate" if component == "sidecar" else
+                                        "supplied" if sidecar_binary is not None else "public-image")
+            if component != "sidecar" and sidecar_binary is None:
                 image = current["sidecar"]["image"]
                 # Linux is the release-runner platform; local macOS callers can
                 # supply a native sidecar candidate to exercise this same gate.
@@ -98,6 +119,8 @@ def check(component, artifacts, receipt, source):
                     run("docker", "rm", container)
                 binary.chmod(0o755)
             record["sidecar_binary_sha256"] = digest(binary)
+            if sidecar_binary is not None and record["sidecar_binary_sha256"] != sidecar_sha256:
+                raise ValueError("supplied sidecar binary differs from the expected SHA256")
             record["installed_packages"] = json.loads(subprocess.check_output(
                 [str(python), "-m", "pip", "list", "--format", "json"], text=True))
             env = {k: v for k, v in os.environ.items()
@@ -120,13 +143,18 @@ def main():
     parser.add_argument("--receipt", type=Path, required=True)
     parser.add_argument("--source", required=True)
     parser.add_argument("--verify", action="store_true")
+    parser.add_argument("--selection", type=Path, help="JSON with schema_version 1 and pinned packages")
+    parser.add_argument("--sidecar-binary", type=Path, help="caller-verified native companion binary")
+    parser.add_argument("--sidecar-sha256", help="expected SHA256 from the caller's verified release evidence")
     args = parser.parse_args()
     if args.verify:
         verify(args.receipt, args.source, args.artifact)
     else:
         if not args.component:
             parser.error("--component is required")
-        check(args.component, args.artifact, args.receipt, args.source)
+        check(args.component, args.artifact, args.receipt, args.source,
+              selection=args.selection, sidecar_binary=args.sidecar_binary,
+              sidecar_sha256=args.sidecar_sha256)
 
 
 if __name__ == "__main__":
