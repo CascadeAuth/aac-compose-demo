@@ -63,3 +63,54 @@ follows.
 
 Ask whether it helps a reader understand how AAC works. If it does not, leave
 it out, or put it in the AAC documentation instead.
+
+## PR and fork checks
+
+In an active virtual environment, run:
+
+```sh
+python tools/prepare_checks.py
+python -m pytest tests -q --ignore tests/live
+docker build --quiet --build-arg AAC_INVOKE_AUTH_VERSION=$(python tools/prepare_checks.py --invoke-version) agent
+```
+
+The `fixture-checks` job installs the public Python wheels pinned in
+`tests/fixtures/components.json`. Its container digests are synthetic Compose
+inputs, never downloaded. Updating a package fixture means updating its version,
+wheel URL and SHA256 together and rerunning these checks. Dependency installation
+and the sample Python image build use the network; the job does no AAC sidecar
+registry lookup and needs no private package credentials. It does not write
+`.local/components.json`. Real users and explicit public acceptance still use
+`./demo prepare` (or `./demo prepare --tests` for an existing demo run).
+
+## Release compatibility inputs
+
+`tools/check_candidate.py` runs the local compatibility tests with the exact
+candidate. A sidecar candidate uses `--component sidecar --artifact BINARY`;
+only Python companions are discovered on PyPI, with no container lookup.
+Use `--selection FILE` to supply those pins instead. The JSON needs
+`schema_version: 1` and a `packages` object containing all three package names
+from `components.PACKAGES`, each with a stable `version`, HTTPS wheel `url`, and
+`sha256`. A saved public demo selection also has this shape.
+
+Internal companion callers can supply a previously verified native sidecar:
+
+```sh
+python tools/check_candidate.py --component aac-cli --artifact dist/CANDIDATE.whl \
+  --source SOURCE_COMMIT --receipt consumer.json --selection selection.json \
+  --sidecar-binary /absolute/path/aac-sidecar --sidecar-sha256 EXPECTED_SHA256
+```
+
+Both binary arguments must be supplied together. Missing files, invalid pins
+or a hash mismatch fail without public fallback. Supplied binaries select only
+Python companions if `--selection` is omitted. Sidecar candidates reject these
+companion-binary arguments. The caller owns signature verification and completed
+release provenance; a matching hash alone does not certify a release. The
+receipt records the selection, supplied selection-file hash, actual binary
+hash and `sidecar_source` (`candidate`, `supplied`, or `public-image`). Existing
+companion callers without supplied inputs retain public discovery until B303
+PR3 migrates them; PR4 wires the Go callers. `--verify` still verifies the
+candidate artifacts against the passing receipt immediately before upload.
+
+These are bounded helper-call and workflow-policy checks. Full execution with
+Docker Hub blocked belongs to B304; PR checks are not that acceptance campaign.

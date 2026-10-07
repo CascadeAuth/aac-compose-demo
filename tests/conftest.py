@@ -65,8 +65,5 @@ def synthetic_home(tmp_path):
 @pytest.fixture(autouse=True)
 def selected_components(monkeypatch):
     import components
-    monkeypatch.setattr(components, "selected", lambda root: {
-        "sidecar": {"image": "docker.io/cascadeauth/aac-sidecar@sha256:" + "1" * 64},
-        "publisher": {"image": "ghcr.io/cascadeauth/aac-trust-anchor-publisher@sha256:" + "2" * 64},
-        "packages": {"aac-invoke-auth": {"version": "0.1.2"}},
-    })
+    monkeypatch.setattr(components, "selected", lambda root:
+                        components.load_selection(REPO / "tests/fixtures/components.json"))

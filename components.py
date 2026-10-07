@@ -28,8 +28,8 @@ def image_digest(reference):
     return reference.split("@", 1)[0] + "@" + digest
 
 
-def resolve():
-    site = read_json(SITE)
+def resolve_packages():
+    """Select Python companions without discovering any container or sidecar."""
     packages = {}
     for name in PACKAGES:
         metadata = read_json(f"https://pypi.org/pypi/{name}/json")
@@ -41,6 +41,25 @@ def resolve():
             raise ValueError("expected the single public pure-Python wheel: " + name)
         wheel = wheels[0]
         packages[name] = {"version": version, "url": wheel["url"], "sha256": wheel["digests"]["sha256"]}
+    return {"schema_version": 1, "packages": packages}
+
+
+def load_selection(path):
+    """Read explicit package pins; never repair them through live discovery."""
+    record = json.loads(path.read_text())
+    if record.get("schema_version") != 1 or set(record.get("packages", {})) != set(PACKAGES):
+        raise ValueError("selection requires schema_version 1 and all three AAC packages")
+    for name, package in record["packages"].items():
+        if (not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", package.get("version", ""))
+                or not re.fullmatch(r"[0-9a-f]{64}", package.get("sha256", ""))
+                or not package.get("url", "").startswith("https://")):
+            raise ValueError("selection requires a stable version, HTTPS wheel URL and SHA256: " + name)
+    return record
+
+
+def resolve():
+    site = read_json(SITE)
+    packages = resolve_packages()["packages"]
     sidecar = site["sidecar"]
     sidecar_image = image_digest("docker.io/cascadeauth/aac-sidecar:" + sidecar["version"])
     if sidecar_image.rsplit("@", 1)[1] != sidecar["image_digest"]:

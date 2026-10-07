@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 jobs:
-  offline:
+  fixture-checks:
     # Everything that needs no tenant: the sample agent and client against
     # test doubles, the compose file against a synthetic agent, the
     # README's commands against the CLI parser, and the shell script.
@@ -19,11 +19,12 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-      # This consumer activates after its required public CLI release.
+      # Public Python packages and the sample base image may be downloaded.
+      # AAC sidecar discovery and registry credentials are unnecessary.
       - run: |
           python -m venv .venv
           source .venv/bin/activate
-          ./demo prepare --tests
+          python tools/prepare_checks.py
           python -m py_compile demo agent/*.py tests/fixtures/*.py
           python -m pytest tests -q --ignore tests/live
-          docker build --quiet --build-arg AAC_INVOKE_AUTH_VERSION=$(python components.py --invoke-version) agent
+          docker build --quiet --build-arg AAC_INVOKE_AUTH_VERSION=$(python tools/prepare_checks.py --invoke-version) agent

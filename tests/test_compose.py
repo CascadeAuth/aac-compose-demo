@@ -6,6 +6,7 @@ import subprocess
 
 import pytest
 import yaml
+import components
 from conftest import REPO
 
 pytestmark = pytest.mark.skipif(not shutil.which("docker"), reason="Docker Compose unavailable")
@@ -13,9 +14,8 @@ pytestmark = pytest.mark.skipif(not shutil.which("docker"), reason="Docker Compo
 
 @pytest.mark.parametrize("agent", ["trip-planner", "booking"])
 def test_independent_mounts_tls_and_runtime(synthetic_home, agent):
-    env = {**os.environ, "AAC_DEMO_ROLE": agent, "AAC_DEMO_SIDECAR_IMAGE": "docker.io/cascadeauth/aac-sidecar@sha256:" + "1"*64,
-           "AAC_DEMO_PUBLISHER_IMAGE": "ghcr.io/cascadeauth/aac-trust-anchor-publisher@sha256:" + "2"*64,
-           "AAC_DEMO_INVOKE_AUTH_VERSION": "0.1.2", "AAC_DEMO_UID": "4242", "AAC_DEMO_GID": "4243",
+    env = {**os.environ, **components.compose_values(components.selected(REPO)),
+           "AAC_DEMO_ROLE": agent, "AAC_DEMO_UID": "4242", "AAC_DEMO_GID": "4243",
            "AAC_DEMO_VANTIS_STATE": str(synthetic_home / "agents/trip-planner/state"),
            "AAC_DEMO_TOURFEDIA_STATE": str(synthetic_home / "agents/booking/state")}
     folder = synthetic_home / "agents" / agent
