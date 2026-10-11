@@ -211,7 +211,10 @@ refuse conflicting class/request values and any request-supplied
 `up` builds the small application image, starts the two pairs and their
 publishers, and waits for readiness and public trust publication.
 `run` starts one task, then waits up to 30 seconds for correlated completion.
-Failure or missing evidence exits nonzero.
+Failure or missing evidence exits nonzero. A failed run shows the client's
+error, then the rows it printed before stopping, and exits with the client's
+exit code; the sidecar logs are the next place to look
+(`./demo compose trip-planner logs sidecar`).
 
 The output includes the actual mint response, root/task IDs, dispatch and
 receive events, signed terminal receipt, reservation/order and

@@ -94,7 +94,12 @@ def main():
         scenario = args[1] if len(args) > 1 else "reservation"
         if scenario not in ("reservation", "fare-change", "fresh-authority", "local-widening"):
             raise ValueError("Unknown demo scenario")
-        output = compose("trip-planner", "run", "--rm", "--no-deps", "client", scenario, capture=True)
+        try:
+            output = compose("trip-planner", "run", "--rm", "--no-deps", "client", scenario, capture=True)
+        except subprocess.CalledProcessError as failed:
+            # The client's error is already on the terminal; show the rows it printed before stopping.
+            print(failed.stdout, end="")
+            sys.exit(failed.returncode)
         print(output, end="")
         started = next(json.loads(line)["mint"] for line in output.splitlines() if line.startswith("{") and "mint" in json.loads(line))
         runs = REPO / ".runs"
