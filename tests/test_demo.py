@@ -1,8 +1,10 @@
 import importlib.machinery
 import importlib.util
 import json
+import subprocess
 from types import SimpleNamespace
 
+import pytest
 from conftest import REPO
 
 
@@ -61,3 +63,24 @@ def test_run_prints_exact_input_paths_and_saves_mint(synthetic_home, tmp_path, m
     assert str(synthetic_home / "agents/trip-planner/state/telemetry.jsonl") in output
     assert str(synthetic_home / "agents/booking/state/actions.jsonl") in output
     assert "AEG input mapping:" in output
+
+
+def test_run_shows_the_client_rows_and_exit_code_when_the_scenario_fails(synthetic_home, tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("AAC_CLI_HOME", str(synthetic_home))
+    loader = importlib.machinery.SourceFileLoader("demo_failure", str(REPO / "demo"))
+    spec = importlib.util.spec_from_loader(loader.name, loader)
+    module = importlib.util.module_from_spec(spec); loader.exec_module(module)
+    monkeypatch.setattr(module, "REPO", tmp_path)
+    rows = (json.dumps({"mint": {"task_ref": "attempt-2"}}) + "\n"
+            + json.dumps({"dispatch": {"terminal_attestation_verification": "workload_unresolved"}}) + "\n")
+
+    def failing_client(*args, **kwargs):
+        raise subprocess.CalledProcessError(3, ["docker", "compose"], output=rows)
+
+    monkeypatch.setattr(module, "compose", failing_client)
+    monkeypatch.setattr(module.sys, "argv", ["demo", "run", "reservation"])
+    with pytest.raises(SystemExit) as stopped:
+        module.main()
+    assert stopped.value.code == 3
+    assert capsys.readouterr().out == rows
+    assert not (tmp_path / ".runs").exists()
