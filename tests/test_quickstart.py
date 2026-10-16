@@ -46,7 +46,8 @@ def test_quickstart_runs_exactly_the_readme_steps():
 def quickstart_render_args(cli_home, mint):
     """The quickstart's render command, parsed, with its shell variables filled in."""
     script = (REPO / "quickstart").read_text()
-    render = script.split("\naeg render ", 1)[1].split("\nxdg-open", 1)[0].replace("\\\n", "")
+    render = script.split("\naeg render ", 1)[1].split('--output "$GRAPH"', 1)[0] + '--output "$GRAPH"'
+    render = render.replace("\\\n", "")
     graph_line = next(line for line in script.splitlines() if line.startswith("GRAPH="))
     graph = subprocess.run(["bash", "-c", f'MINT={shlex.quote(str(mint))}; {graph_line}; printf %s "$GRAPH"'],
                            check=True, capture_output=True, text=True).stdout

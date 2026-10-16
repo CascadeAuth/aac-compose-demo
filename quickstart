@@ -14,6 +14,9 @@ set -e
 # Both contact addresses are required.
 : "${VANTIS_CONTACT:?Set VANTIS_CONTACT and TOURFEDIA_CONTACT to your real contact addresses}"
 : "${TOURFEDIA_CONTACT:?Set VANTIS_CONTACT and TOURFEDIA_CONTACT to your real contact addresses}"
+# aac-cli needs Python 3.11 or later; the python3 built into macOS is 3.9.
+python3 -c 'import sys; sys.exit(sys.version_info < (3, 11))' ||
+  { echo "python3 is $(python3 --version 2>&1); install Python 3.11 or later first (see the README)."; exit 1; }
 # Run from the clone, wherever the script is started from.
 cd "$(dirname "$0")"
 # Step headings use ":" (do nothing) so the trace prints each heading once.
@@ -111,7 +114,11 @@ aeg render --mint-response "$MINT" \
   --events "$AAC_CLI_HOME/agents/booking/state/telemetry.jsonl" \
   --actions "$AAC_CLI_HOME/agents/booking/state/actions.jsonl" \
   --output "$GRAPH"
-xdg-open "$GRAPH" 2>/dev/null || open "$GRAPH" 2>/dev/null || true
 
-: "== Done in ${SECONDS}s. Graph: $GRAPH"
-: "To continue by hand: . .aac-tools/bin/activate; export AAC_CLI_HOME=\"$AAC_CLI_HOME\"; rerun the first block of step 3 (it only reads status); then README step 4 onwards."
+# The README commands are done; the rest only opens the graph and reports.
+set +x
+xdg-open "$GRAPH" >/dev/null 2>&1 || open "$GRAPH" >/dev/null 2>&1 || true
+echo
+echo "Done in ${SECONDS}s. Your execution graph, opened in your browser:"
+echo "  $GRAPH"
+echo "Next: README step 4 runs two more scenarios; \"Cleanup and limits\" stops the demo."

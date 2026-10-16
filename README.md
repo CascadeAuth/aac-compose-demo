@@ -58,6 +58,21 @@ printing each command before it runs (the trust sections it appends in step 3
 show only as `cat`; their text is in the script), then renders the execution
 graph and opens it in your browser. It runs the reservation scenario only.
 
+Before you run it, check the two versions that matter:
+
+```sh
+python3 --version
+docker compose version
+```
+
+`python3` must be 3.11 or later. The `python3` built into macOS is 3.9, so
+install a newer one first, from [python.org](https://www.python.org/downloads/)
+or Homebrew; the quickstart stops with a message if `python3` is too old.
+Docker must be running, with the Compose plugin (`docker compose`, not the
+older `docker-compose`) and Buildx; Docker Desktop includes both. You also
+need Git and a browser for the GitHub sign-ins. The versions used in measured
+runs are recorded in [docs/evidence](docs/evidence/README.md).
+
 ```sh
 git clone https://github.com/CascadeAuth/aac-compose-demo.git
 cd aac-compose-demo
@@ -70,6 +85,15 @@ Read [quickstart](quickstart) alongside steps 1 to 4: the steps explain what
 each command does and why. If a step fails, fix the cause and run the same
 command again, with both contact addresses, in the same clone; it reuses both
 registrations. A new clone would register two more tenants.
+
+To run more steps by hand afterwards, in the same terminal, activate the
+tools, point the CLI at the demo's home and rerun the first block of step 3,
+which only reads status:
+
+```sh
+. .aac-tools/bin/activate
+export AAC_CLI_HOME="$PWD/.local/aac"
+```
 
 ## 1. Install AAC CLI and prepare the example
 
