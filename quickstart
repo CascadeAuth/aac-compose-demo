@@ -1,0 +1,107 @@
+#!/usr/bin/env bash
+# README steps 1 to 4 in one script, for a first run. Each command is printed
+# (with a leading +) before it runs. The README explains what each step does
+# and why; read the two side by side. From a fresh clone:
+#
+#   VANTIS_CONTACT='you+vantis@example.com' TOURFEDIA_CONTACT='you+tourfedia@example.com' ./quickstart
+#
+# Use your real contact addresses. You sign in with GitHub four times in your
+# browser, two per tenant, and acknowledge each permanent tenant registration.
+# The quickstart runs the reservation scenario only, then renders its
+# execution graph and opens it.
+set -e
+: "${VANTIS_CONTACT:?Set VANTIS_CONTACT and TOURFEDIA_CONTACT to your real contact addresses}"
+: "${TOURFEDIA_CONTACT:?Set VANTIS_CONTACT and TOURFEDIA_CONTACT to your real contact addresses}"
+cd "$(dirname "$0")"
+# Step headings use ":" (do nothing) so the trace prints each heading once.
+set -x
+
+: "== 1. Install AAC CLI and prepare the example"
+python3 -m venv .aac-tools
+set +x
+. .aac-tools/bin/activate
+set -x
+python -m pip install --upgrade aac-cli
+aac --version
+aeg --version
+./demo prepare
+mkdir -p .local
+export AAC_CLI_HOME="$PWD/.local/aac"
+cp config/trip-planner.yaml .local/trip-planner.yaml
+cp config/booking.yaml .local/booking.yaml
+
+: "== 2. Register two tenants (${SECONDS}s so far)"
+aac init \
+  --profile vantis \
+  --agent trip-planner \
+  --agent-config .local/trip-planner.yaml \
+  --layout container \
+  --admin-url https://api.stage.cascadeauth.dev \
+  --data-plane-url https://api.stage.cascadeauth.dev \
+  --trust-url https://trust.stage.cascadeauth.dev \
+  --idp github \
+  --display-name 'Vantis Equity Demo' \
+  --contact "$VANTIS_CONTACT"
+aac init \
+  --profile tourfedia \
+  --agent booking \
+  --agent-config .local/booking.yaml \
+  --layout container \
+  --admin-url https://api.stage.cascadeauth.dev \
+  --data-plane-url https://api.stage.cascadeauth.dev \
+  --trust-url https://trust.stage.cascadeauth.dev \
+  --idp github \
+  --display-name 'Tourfedia Demo' \
+  --contact "$TOURFEDIA_CONTACT"
+
+: "== 3. Explicitly trust and address the peer (${SECONDS}s so far)"
+aac agent status --agent trip-planner --output json > .local/vantis-status.json
+aac agent status --agent booking --output json > .local/tourfedia-status.json
+VANTIS_TENANT=$(aac agent status --agent trip-planner --field tenant-id)
+VANTIS_DOMAIN=$(aac agent status --agent trip-planner --field hosted-trust-domain)
+VANTIS_ID=$(aac agent status --agent trip-planner --field workload-spiffe-id)
+TOURFEDIA_TENANT=$(aac agent status --agent booking --field tenant-id)
+TOURFEDIA_DOMAIN=$(aac agent status --agent booking --field hosted-trust-domain)
+TOURFEDIA_ID=$(aac agent status --agent booking --field workload-spiffe-id)
+cat >> .local/trip-planner.yaml <<EOF
+trust_anchors:
+  tenant_ids: [$TOURFEDIA_TENANT]
+spiffe_bundles:
+  trust_domains: [$TOURFEDIA_DOMAIN]
+https_trust:
+  ca_files: ["$AAC_CLI_HOME/agents/booking/agent/ca.crt"]
+destinations:
+  tourfedia:
+    url: https://booking:9443/v1/agent/receive
+    audience_pattern: $TOURFEDIA_ID
+    valid_for: +30m
+    timeout_ms: 10000
+EOF
+cat >> .local/booking.yaml <<EOF
+trust_anchors:
+  tenant_ids: [$VANTIS_TENANT]
+spiffe_bundles:
+  trust_domains: [$VANTIS_DOMAIN]
+https_trust:
+  ca_files: ["$AAC_CLI_HOME/agents/trip-planner/agent/ca.crt"]
+EOF
+aac init --profile vantis --agent trip-planner --agent-config .local/trip-planner.yaml
+aac init --profile tourfedia --agent booking --agent-config .local/booking.yaml
+
+: "== 4. Start and run (${SECONDS}s so far)"
+./demo up
+./demo run
+
+: "== View this execution graph (${SECONDS}s so far)"
+MINT=$(ls -t .runs/*.mint.json | head -n 1)
+GRAPH="${MINT%.mint.json}.html"
+aeg render --mint-response "$MINT" \
+  --events "$AAC_CLI_HOME/agents/trip-planner/state/telemetry.jsonl" \
+  --actions "$AAC_CLI_HOME/agents/trip-planner/state/actions.jsonl" \
+  --events "$AAC_CLI_HOME/agents/booking/state/telemetry.jsonl" \
+  --actions "$AAC_CLI_HOME/agents/booking/state/actions.jsonl" \
+  --output "$GRAPH"
+open "$GRAPH" 2>/dev/null || xdg-open "$GRAPH" 2>/dev/null || true
+
+: "== Done in ${SECONDS}s. Graph: $GRAPH"
+: "To continue by hand: . .aac-tools/bin/activate; export AAC_CLI_HOME=\"$AAC_CLI_HOME\"; then README step 4 onwards."
