@@ -1,4 +1,7 @@
 """The quickstart runs README steps 1 to 4 exactly as written."""
+import importlib.machinery
+import importlib.util
+import json
 import os
 import re
 import shlex
@@ -40,12 +43,34 @@ def test_quickstart_runs_exactly_the_readme_steps():
     assert quickstart_step_lines() == readme_step_lines()
 
 
-def test_quickstart_graph_command_parses_against_the_installed_aeg():
+def quickstart_render_args(cli_home, mint):
+    """The quickstart's render command, parsed, with its shell variables filled in."""
     script = (REPO / "quickstart").read_text()
-    render = script.split("\naeg render ", 1)[1].split("\n\n", 1)[0].split("\nxdg-open", 1)[0]
-    argv = shlex.split("aeg render " + render.replace("\\\n", ""))
-    args = parser().parse_args(argv[1:])
-    assert len(args.events) == 2 and len(args.actions) == 2
+    render = script.split("\naeg render ", 1)[1].split("\nxdg-open", 1)[0].replace("\\\n", "")
+    graph_line = next(line for line in script.splitlines() if line.startswith("GRAPH="))
+    graph = subprocess.run(["bash", "-c", f'MINT={shlex.quote(str(mint))}; {graph_line}; printf %s "$GRAPH"'],
+                           check=True, capture_output=True, text=True).stdout
+    render = render.replace("$AAC_CLI_HOME", str(cli_home)).replace("$MINT", str(mint)).replace("$GRAPH", str(graph))
+    return parser().parse_args(["render", *shlex.split(render)])
+
+
+def test_quickstart_renders_the_same_graph_as_demo_run(synthetic_home, tmp_path, monkeypatch, capsys):
+    # Produce the render command ./demo run prints, as in test_demo.py.
+    monkeypatch.setenv("AAC_CLI_HOME", str(synthetic_home))
+    loader = importlib.machinery.SourceFileLoader("demo_for_quickstart", str(REPO / "demo"))
+    spec = importlib.util.spec_from_loader(loader.name, loader)
+    module = importlib.util.module_from_spec(spec); loader.exec_module(module)
+    monkeypatch.setattr(module, "REPO", tmp_path)
+    started = {"root_token_id": "a" * 64, "task_ref": "attempt-1", "delivery_status": "delivered"}
+    monkeypatch.setattr(module, "compose", lambda *a, **k: json.dumps({"mint": started}) + "\n")
+    monkeypatch.setattr(module.sys, "argv", ["demo", "run", "reservation"])
+    module.main()
+    printed = capsys.readouterr().out.split("Render this attempt locally:\n", 1)[1].splitlines()[0]
+    demo = parser().parse_args(shlex.split(printed)[1:])
+
+    quickstart = quickstart_render_args(synthetic_home, tmp_path / ".runs/attempt-1.mint.json")
+    for field in ("mint_response", "events", "actions", "output"):
+        assert getattr(quickstart, field) == getattr(demo, field), field
 
 
 def test_quickstart_is_an_executable_shell_script():

@@ -67,9 +67,9 @@ VANTIS_CONTACT='you+vantis@example.com' TOURFEDIA_CONTACT='you+tourfedia@example
 Use your real contact addresses. You sign in with GitHub four times in your
 browser, two per tenant, and acknowledge each permanent tenant registration.
 Read [quickstart](quickstart) alongside steps 1 to 4: the steps explain what
-each command does and why. If a step fails, fix the cause and run
-`./quickstart` again in the same clone; it reuses both registrations. A new
-clone would register two more tenants.
+each command does and why. If a step fails, fix the cause and run the same
+command again, with both contact addresses, in the same clone; it reuses both
+registrations. A new clone would register two more tenants.
 
 ## 1. Install AAC CLI and prepare the example
 
