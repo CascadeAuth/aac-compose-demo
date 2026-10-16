@@ -1,8 +1,10 @@
 """The quickstart runs README steps 1 to 4 exactly as written."""
 import os
 import re
+import shlex
 import subprocess
 
+from aac_cli._aeg.cli import parser
 from conftest import REPO
 
 # Lines of steps 1 to 4 the quickstart leaves out on purpose: the clone happens
@@ -27,12 +29,23 @@ def readme_step_lines():
     return [line for block in blocks for line in block.splitlines() if line.strip() and line not in LEFT_OUT]
 
 
-def test_quickstart_runs_the_readme_steps_in_order():
-    script = (REPO / "quickstart").read_text().splitlines()
-    position = 0
-    for line in readme_step_lines():
-        assert line in script[position:], f"README line missing or out of order in quickstart: {line}"
-        position = script.index(line, position) + 1
+def quickstart_step_lines():
+    """The script's command lines from step 1 up to the graph, without headings, comments and trace switches."""
+    script = (REPO / "quickstart").read_text()
+    steps = script.split(': "== 1.', 1)[1].split(': "== View', 1)[0].splitlines()[1:]
+    return [line for line in steps if line.strip() and not line.startswith((": ", "set ", "#"))]
+
+
+def test_quickstart_runs_exactly_the_readme_steps():
+    assert quickstart_step_lines() == readme_step_lines()
+
+
+def test_quickstart_graph_command_parses_against_the_installed_aeg():
+    script = (REPO / "quickstart").read_text()
+    render = script.split("\naeg render ", 1)[1].split("\n\n", 1)[0].split("\nxdg-open", 1)[0]
+    argv = shlex.split("aeg render " + render.replace("\\\n", ""))
+    args = parser().parse_args(argv[1:])
+    assert len(args.events) == 2 and len(args.actions) == 2
 
 
 def test_quickstart_is_an_executable_shell_script():

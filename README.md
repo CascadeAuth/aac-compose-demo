@@ -54,8 +54,9 @@ for protocol/configuration reference and production deployment choices.
 
 To see the whole journey once before reading it step by step, run the
 quickstart from a fresh clone. It runs steps 1 to 4 below exactly as written,
-printing each command before it runs, then renders the execution graph and
-opens it in your browser. It runs the reservation scenario only.
+printing each command before it runs (the trust sections it appends in step 3
+show only as `cat`; their text is in the script), then renders the execution
+graph and opens it in your browser. It runs the reservation scenario only.
 
 ```sh
 git clone https://github.com/CascadeAuth/aac-compose-demo.git
@@ -66,7 +67,9 @@ VANTIS_CONTACT='you+vantis@example.com' TOURFEDIA_CONTACT='you+tourfedia@example
 Use your real contact addresses. You sign in with GitHub four times in your
 browser, two per tenant, and acknowledge each permanent tenant registration.
 Read [quickstart](quickstart) alongside steps 1 to 4: the steps explain what
-each command does and why.
+each command does and why. If a step fails, fix the cause and run
+`./quickstart` again in the same clone; it reuses both registrations. A new
+clone would register two more tenants.
 
 ## 1. Install AAC CLI and prepare the example
 

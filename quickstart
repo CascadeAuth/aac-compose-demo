@@ -9,15 +9,20 @@
 # browser, two per tenant, and acknowledge each permanent tenant registration.
 # The quickstart runs the reservation scenario only, then renders its
 # execution graph and opens it.
+# Stop at the first command that fails.
 set -e
+# Both contact addresses are required.
 : "${VANTIS_CONTACT:?Set VANTIS_CONTACT and TOURFEDIA_CONTACT to your real contact addresses}"
 : "${TOURFEDIA_CONTACT:?Set VANTIS_CONTACT and TOURFEDIA_CONTACT to your real contact addresses}"
+# Run from the clone, wherever the script is started from.
 cd "$(dirname "$0")"
 # Step headings use ":" (do nothing) so the trace prints each heading once.
 set -x
 
 : "== 1. Install AAC CLI and prepare the example"
 python3 -m venv .aac-tools
+# Tracing is paused here only because it would print every line of the
+# activate script. The command is: . .aac-tools/bin/activate
 set +x
 . .aac-tools/bin/activate
 set -x
@@ -63,6 +68,9 @@ VANTIS_ID=$(aac agent status --agent trip-planner --field workload-spiffe-id)
 TOURFEDIA_TENANT=$(aac agent status --agent booking --field tenant-id)
 TOURFEDIA_DOMAIN=$(aac agent status --agent booking --field hosted-trust-domain)
 TOURFEDIA_ID=$(aac agent status --agent booking --field workload-spiffe-id)
+# The trace shows each of the next two appends as a bare "cat". The text
+# they append is below; it ends up in .local/trip-planner.yaml and
+# .local/booking.yaml.
 cat >> .local/trip-planner.yaml <<EOF
 trust_anchors:
   tenant_ids: [$TOURFEDIA_TENANT]
@@ -93,6 +101,8 @@ aac init --profile tourfedia --agent booking --agent-config .local/booking.yaml
 ./demo run
 
 : "== View this execution graph (${SECONDS}s so far)"
+# The same render command ./demo run printed above, using the mint
+# response that run just saved.
 MINT=$(ls -t .runs/*.mint.json | head -n 1)
 GRAPH="${MINT%.mint.json}.html"
 aeg render --mint-response "$MINT" \
@@ -101,7 +111,7 @@ aeg render --mint-response "$MINT" \
   --events "$AAC_CLI_HOME/agents/booking/state/telemetry.jsonl" \
   --actions "$AAC_CLI_HOME/agents/booking/state/actions.jsonl" \
   --output "$GRAPH"
-open "$GRAPH" 2>/dev/null || xdg-open "$GRAPH" 2>/dev/null || true
+xdg-open "$GRAPH" 2>/dev/null || open "$GRAPH" 2>/dev/null || true
 
 : "== Done in ${SECONDS}s. Graph: $GRAPH"
-: "To continue by hand: . .aac-tools/bin/activate; export AAC_CLI_HOME=\"$AAC_CLI_HOME\"; then README step 4 onwards."
+: "To continue by hand: . .aac-tools/bin/activate; export AAC_CLI_HOME=\"$AAC_CLI_HOME\"; rerun the first block of step 3 (it only reads status); then README step 4 onwards."
