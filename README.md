@@ -68,9 +68,11 @@ docker compose version
 
 `python3` must be 3.11 or later. The `python3` built into macOS is 3.9, so
 install a newer one first, from [python.org](https://www.python.org/downloads/)
-or Homebrew; the quickstart stops with a message if `python3` is too old.
-Docker must be running, with the Compose plugin (`docker compose`, not the
-older `docker-compose`) and Buildx; Docker Desktop includes both. You also
+or Homebrew; the quickstart stops with a message if `python3` is too old. On
+Debian or Ubuntu, Python's `venv` is a separate package: `sudo apt install
+python3-venv`. Docker must be running, with the Compose plugin (`docker
+compose`, not the older `docker-compose`) and Buildx; Docker Desktop includes
+both. On Linux, your user must be able to run `docker` without `sudo`. You also
 need Git and a browser for the GitHub sign-ins. The versions used in measured
 runs are recorded in [docs/evidence](docs/evidence/README.md).
 

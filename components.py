@@ -20,9 +20,11 @@ def read_json(url):
 
 
 def image_digest(reference):
-    digest = subprocess.check_output(
-        ["docker", "buildx", "imagetools", "inspect", reference, "--format", "{{.Manifest.Digest}}"],
-        text=True).strip()
+    # The JSON template works on every Buildx in use; Ubuntu 24.04's packaged
+    # Buildx 0.30 ignores the plain {{.Manifest.Digest}} template.
+    digest = json.loads(subprocess.check_output(
+        ["docker", "buildx", "imagetools", "inspect", reference, "--format", "{{json .Manifest.Digest}}"],
+        text=True))
     if not re.fullmatch(r"sha256:[0-9a-f]{64}", digest):
         raise ValueError("registry returned no image digest")
     return reference.split("@", 1)[0] + "@" + digest
