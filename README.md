@@ -87,9 +87,21 @@ each command does and why. If a step fails, fix the cause and run the same
 command again, with both contact addresses, in the same clone; it reuses both
 registrations. A new clone would register two more tenants.
 
-To run more steps by hand afterwards, in the same terminal, activate the
-tools and point the CLI at the demo's home with the two lines below, then
-rerun the first block of step 3, which only reads status:
+The demo keeps running in Docker until you stop it with `./demo down`. The
+quickstart's settings end with the script, so put the demo's CLI home in
+front of each later command; that changes nothing else in your terminal.
+Step 4 explains the two other scenarios:
+
+```sh
+AAC_CLI_HOME="$PWD/.local/aac" ./demo run fare-change
+AAC_CLI_HOME="$PWD/.local/aac" ./demo run fresh-authority
+AAC_CLI_HOME="$PWD/.local/aac" ./demo down
+```
+
+To work through the later steps by hand instead, use a terminal dedicated to
+the demo, as step 1 does: activate the tools and point the CLI at the demo's
+home with the two lines below, then rerun the first block of step 3, which
+only reads status:
 
 ```sh
 . .aac-tools/bin/activate
