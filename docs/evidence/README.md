@@ -1,5 +1,20 @@
 # Measured runs
 
+## Quickstart timing — 2026-10-16 and 2026-10-17 UTC
+
+[quickstart-20261017.json](quickstart-20261017.json) records three runs of
+`./quickstart` with aac-cli 0.2.11, sidecar v0.5.4 and publisher 0.2.3. On the
+owner's Mac, with warm caches, the first run registered two tenants and
+completed in 133 seconds. On a fresh Ubuntu 24.04 VM without a desktop, the
+first run completed in 258 seconds, of which 230 were registering the two
+tenants, mostly the four GitHub sign-ins by device code. A rerun in the same
+clone reused both registrations and completed in 28 seconds; the owner then
+copied its graph to the Mac with the `multipass transfer` command the
+quickstart now prints. The fresh VM found two defects, both fixed before the
+timed run: stock Ubuntu needs `python3-venv`, and Ubuntu's Buildx 0.30.1
+ignored the digest template that `./demo prepare` used. The receipt holds no
+contact addresses, tenant ids, tokens or keys.
+
 ## Execution-graph acceptance — 2026-09-25 UTC
 
 [aeg-20260925.json](aeg-20260925.json) records public `aac-aeg 0.1.0`, CLI 0.2.3,
