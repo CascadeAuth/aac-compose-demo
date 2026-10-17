@@ -2,6 +2,7 @@
 __pycache__/
 *.pyc
 .venv/
+.aac-tools/
 .pytest_cache/
 # IDE state
 .idea/

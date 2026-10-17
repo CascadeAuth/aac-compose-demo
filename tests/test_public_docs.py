@@ -20,7 +20,7 @@ def test_reservation_narrative_and_boundary():
 
 def test_every_named_requirement_is_linked_and_explains_where_it_runs():
     readme = (ROOT / "README.md").read_text()
-    section = readme.split("## Requirements\n", 1)[1].split("## 1.", 1)[0]
+    section = readme.split("## Requirements\n", 1)[1].split("## Quickstart", 1)[0]
     assert "Version used here" not in section
     rows = [line.split("|")[1:3] for line in section.splitlines() if line.startswith("| ")][1:]
     assert len(rows) == 6
@@ -59,7 +59,7 @@ def test_rendered_requirements_link_every_component():
                     self.unlinked += value
 
     readme = (ROOT / "README.md").read_text()
-    requirements = readme.split("## Requirements\n", 1)[1].split("## 1.", 1)[0]
+    requirements = readme.split("## Requirements\n", 1)[1].split("## Quickstart", 1)[0]
     rendered = MarkdownIt("commonmark").enable("table").render(requirements)
     table = Table(); table.feed(rendered)
     assert len(table.cells) == 12

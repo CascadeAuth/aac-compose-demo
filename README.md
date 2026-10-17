@@ -24,7 +24,7 @@ not another delegation or another business agent.
 
 ## Requirements
 
-macOS or Linux, Git, Python 3.11+ and Docker with Compose. You will register
+macOS or Linux, Git, Python 3.11+ and Docker with Compose and Buildx. You will register
 two stage developer tenants you control. Registration requires interactive
 GitHub sign-in.
 The two tenants can have the same human owner. A contact email is registration
@@ -49,6 +49,67 @@ recorded run or silently select a different container.
 No private repository or AAC SDK is required. The applications build locally
 from this public source. See the [AAC guide](https://docs.cascadeauth.com/)
 for protocol/configuration reference and production deployment choices.
+
+## Quickstart
+
+To see the whole journey once before reading it step by step, run the
+quickstart from a fresh clone. It runs steps 1 to 4 below exactly as written,
+printing each command before it runs (the trust sections it appends in step 3
+show only as `cat`; their text is in the script), then renders the execution
+graph and opens it in your browser where one is available. It runs the
+reservation scenario only.
+
+Before you run it, check the two versions that matter:
+
+```sh
+python3 --version
+docker compose version
+```
+
+`python3` must be 3.11 or later. The `python3` built into macOS is 3.9, so
+install a newer one first, from [python.org](https://www.python.org/downloads/)
+or Homebrew; the quickstart stops with a message if `python3` is too old.
+Docker must be running, with the Compose plugin (`docker compose`, not the
+older `docker-compose`) and Buildx; Docker Desktop includes both. You also
+need Git and a browser for the GitHub sign-ins. The versions used in measured
+runs are recorded in [docs/evidence](docs/evidence/README.md).
+
+```sh
+git clone https://github.com/CascadeAuth/aac-compose-demo.git
+cd aac-compose-demo
+VANTIS_CONTACT='you+vantis@example.com' TOURFEDIA_CONTACT='you+tourfedia@example.com' ./quickstart
+```
+
+Use your real contact addresses. You sign in with GitHub four times in your
+browser, two per tenant, and acknowledge each permanent tenant registration.
+Read [quickstart](quickstart) alongside steps 1 to 4: the steps explain what
+each command does and why. If a step fails, fix the cause and run the same
+command again, with both contact addresses, in the same clone; it reuses both
+registrations. A new clone would register two more tenants.
+
+The demo keeps running in Docker until you stop it with `./demo down`. The
+quickstart's settings end with the script, so put the demo's CLI home in
+front of each later command; that changes nothing else in your terminal.
+Step 4 explains the two other scenarios:
+
+```sh
+AAC_CLI_HOME="$PWD/.local/aac" ./demo run fare-change
+AAC_CLI_HOME="$PWD/.local/aac" ./demo run fresh-authority
+AAC_CLI_HOME="$PWD/.local/aac" ./demo down
+```
+
+Each run also prints an `aeg render` command for its graph. `aeg` is in the
+quickstart's tools, so run that command after the two setup lines below.
+
+To work through the later steps by hand instead, use a terminal dedicated to
+the demo, as step 1 does: activate the tools and point the CLI at the demo's
+home with the two lines below, then rerun the first block of step 3, which
+only reads status:
+
+```sh
+. .aac-tools/bin/activate
+export AAC_CLI_HOME="$PWD/.local/aac"
+```
 
 ## 1. Install AAC CLI and prepare the example
 
