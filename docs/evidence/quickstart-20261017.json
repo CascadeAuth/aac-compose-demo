@@ -1,0 +1,88 @@
+{
+  "item": "B328 quickstart timing",
+  "note": "Elapsed seconds are the quickstart's own step headings. Counts and versions only: no contact addresses, tenant ids, tokens or keys.",
+  "components": {
+    "aac_cli": "0.2.11",
+    "sidecar": "v0.5.4",
+    "publisher": "0.2.3"
+  },
+  "runs": [
+    {
+      "label": "macOS workstation, warm caches, first registration",
+      "date": "2026-10-16",
+      "demo_commit": "df18dcd",
+      "platform": {
+        "system": "Darwin",
+        "machine": "arm64"
+      },
+      "versions": {
+        "python": "3.14.6",
+        "docker": "29.8.2",
+        "compose": "5.5.1",
+        "buildx": "0.37.2",
+        "bash": "3.2.57"
+      },
+      "tenants_registered": 2,
+      "result": "completed",
+      "seconds": {
+        "total": 133
+      },
+      "per_step": "not recorded"
+    },
+    {
+      "label": "Ubuntu 24.04.5 fresh Multipass VM (2 CPU, 4 GiB), first registration, headless",
+      "date": "2026-10-17",
+      "demo_commit": "b37e244",
+      "platform": {
+        "system": "Linux",
+        "machine": "aarch64"
+      },
+      "versions": {
+        "python": "3.12.3 with python3-venv",
+        "docker": "29.1.3",
+        "compose": "2.40.3",
+        "buildx": "0.30.1",
+        "git": "2.43.0"
+      },
+      "tenants_registered": 2,
+      "result": "completed",
+      "seconds": {
+        "total": 258,
+        "install_and_prepare": 7,
+        "register_two_tenants": 230,
+        "trust_and_address_peer": 1,
+        "start_and_run": 19,
+        "render_graph": 1
+      },
+      "notes": [
+        "install_and_prepare was warm: an earlier attempt that day had installed the packages before stopping at the fixed prepare defect",
+        "register_two_tenants is mostly the owner entering four GitHub device codes in a browser on another machine",
+        "the graph was copied to the owner's Mac with the printed multipass transfer command"
+      ]
+    },
+    {
+      "label": "same VM, rerun in the same clone",
+      "date": "2026-10-17",
+      "demo_commit": "f88ef48",
+      "platform": {
+        "system": "Linux",
+        "machine": "aarch64"
+      },
+      "tenants_registered": 0,
+      "result": "completed",
+      "seconds": {
+        "total": 28,
+        "install_and_prepare": 2,
+        "register_two_tenants": 0,
+        "trust_and_address_peer": 1,
+        "start_and_run": 25,
+        "render_graph": 0
+      }
+    }
+  ],
+  "findings_fixed": [
+    "stock Ubuntu lacks python3-venv; the README now names it (#16)",
+    "Ubuntu's Buildx 0.30.1 ignored the {{.Manifest.Digest}} template, failing ./demo prepare; fixed (#16)",
+    "on a machine without a browser the quickstart now prints how to copy the graph out (#17)"
+  ]
+}
