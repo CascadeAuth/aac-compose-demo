@@ -1,6 +1,6 @@
 {
   "item": "B328 quickstart timing",
-  "note": "Elapsed seconds are the quickstart's own step headings. Counts and versions only: no contact addresses, tenant ids, tokens or keys.",
+  "note": "Per-step seconds are differences between the cumulative times in the quickstart's step headings; totals are its 'Done in Ns' line. No contact addresses, tenant ids, tokens or keys.",
   "components": {
     "aac_cli": "0.2.11",
     "sidecar": "v0.5.4",
@@ -9,8 +9,8 @@
   "runs": [
     {
       "label": "macOS workstation, warm caches, first registration",
-      "date": "2026-10-16",
-      "demo_commit": "df18dcd",
+      "date": "2026-10-16 UTC",
+      "demo_commit": "df18dcd2bcb3c06039dd9d558a185623dbf8b4a5",
       "platform": {
         "system": "Darwin",
         "machine": "arm64"
@@ -31,8 +31,8 @@
     },
     {
       "label": "Ubuntu 24.04.5 fresh Multipass VM (2 CPU, 4 GiB), first registration, headless",
-      "date": "2026-10-17",
-      "demo_commit": "b37e244",
+      "date": "2026-10-17 UTC",
+      "demo_commit": "b37e2442522463e51b8f70a1323bac220b16507c",
       "platform": {
         "system": "Linux",
         "machine": "aarch64"
@@ -56,14 +56,14 @@
       },
       "notes": [
         "install_and_prepare was warm: an earlier attempt that day had installed the packages before stopping at the fixed prepare defect",
-        "register_two_tenants is mostly the owner entering four GitHub device codes in a browser on another machine",
-        "the graph was copied to the owner's Mac with the printed multipass transfer command"
+        "register_two_tenants covers both aac init registrations, mostly the owner entering four GitHub device codes in a browser on another machine",
+        "the graph was copied to the owner's Mac with multipass transfer (this version printed no copy-out hint yet)"
       ]
     },
     {
       "label": "same VM, rerun in the same clone",
-      "date": "2026-10-17",
-      "demo_commit": "f88ef48",
+      "date": "2026-10-17 UTC",
+      "demo_commit": "f88ef4803baa88a45dee59f6de1579359314158d",
       "platform": {
         "system": "Linux",
         "machine": "aarch64"
@@ -77,7 +77,10 @@
         "trust_and_address_peer": 1,
         "start_and_run": 25,
         "render_graph": 0
-      }
+      },
+      "notes": [
+        "the owner copied the graph out with the multipass transfer command the quickstart now prints (#17)"
+      ]
     }
   ],
   "findings_fixed": [
