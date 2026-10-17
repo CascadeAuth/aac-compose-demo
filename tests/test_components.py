@@ -60,19 +60,19 @@ def test_test_setup_preserves_the_frozen_aac_selection(tmp_path, monkeypatch):
     assert not any(line.startswith("aac-") for line in (components.Path(__file__).parent / "requirements.txt").read_text().splitlines())
 
 
-def test_image_digest_reads_the_json_template(monkeypatch):
+def test_image_digest_uses_a_template_every_buildx_honors(monkeypatch):
     calls = []
     def check_output(argv, text):
         calls.append(argv)
-        return '"sha256:' + "3" * 64 + '"\n'
+        return "sha256:" + "3" * 64 + "\n"
     monkeypatch.setattr(components.subprocess, "check_output", check_output)
     assert components.image_digest("docker.io/example/image:v1") == "docker.io/example/image:v1@sha256:" + "3" * 64
-    assert calls[0][-2:] == ["--format", "{{json .Manifest.Digest}}"]
+    assert calls[0][-2:] == ["--format", '{{printf "%s" .Manifest.Digest}}']
 
 
 def test_image_digest_refuses_output_that_is_not_a_digest(monkeypatch):
     # What an older Buildx prints when it ignores the template: its default summary.
     summary = "Name:      docker.io/example/image:v1\nMediaType: application/vnd.oci.image.index.v1+json\n"
     monkeypatch.setattr(components.subprocess, "check_output", lambda argv, text: summary)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="no image digest"):
         components.image_digest("docker.io/example/image:v1")

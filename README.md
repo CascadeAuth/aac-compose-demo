@@ -72,7 +72,8 @@ or Homebrew; the quickstart stops with a message if `python3` is too old. On
 Debian or Ubuntu, Python's `venv` is a separate package: `sudo apt install
 python3-venv`. Docker must be running, with the Compose plugin (`docker
 compose`, not the older `docker-compose`) and Buildx; Docker Desktop includes
-both. On Linux, your user must be able to run `docker` without `sudo`. You also
+both. On Linux, your user must be able to run `docker` without `sudo` (see
+Docker's [post-installation steps](https://docs.docker.com/engine/install/linux-postinstall/)). You also
 need Git and a browser for the GitHub sign-ins. The versions used in measured
 runs are recorded in [docs/evidence](docs/evidence/README.md).
 
