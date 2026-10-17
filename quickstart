@@ -119,6 +119,7 @@ aeg render --mint-response "$MINT" \
 set +x
 xdg-open "$GRAPH" >/dev/null 2>&1 || open "$GRAPH" >/dev/null 2>&1 || true
 echo
-echo "Done in ${SECONDS}s. Your execution graph, opened in your browser:"
-echo "  $GRAPH"
-echo "Next: README step 4 runs two more scenarios; \"Cleanup and limits\" stops the demo."
+echo "Done in ${SECONDS}s. Your execution graph (open it in a browser if it did not open):"
+echo "  $PWD/$GRAPH"
+echo "Next, by hand: the two setup lines at the end of the README's Quickstart section, then step 4's other"
+echo "scenarios; \"Cleanup and limits\" stops the demo."

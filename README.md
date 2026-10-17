@@ -24,7 +24,7 @@ not another delegation or another business agent.
 
 ## Requirements
 
-macOS or Linux, Git, Python 3.11+ and Docker with Compose. You will register
+macOS or Linux, Git, Python 3.11+ and Docker with Compose and Buildx. You will register
 two stage developer tenants you control. Registration requires interactive
 GitHub sign-in.
 The two tenants can have the same human owner. A contact email is registration
@@ -56,7 +56,8 @@ To see the whole journey once before reading it step by step, run the
 quickstart from a fresh clone. It runs steps 1 to 4 below exactly as written,
 printing each command before it runs (the trust sections it appends in step 3
 show only as `cat`; their text is in the script), then renders the execution
-graph and opens it in your browser. It runs the reservation scenario only.
+graph and opens it in your browser where one is available. It runs the
+reservation scenario only.
 
 Before you run it, check the two versions that matter:
 
@@ -87,8 +88,8 @@ command again, with both contact addresses, in the same clone; it reuses both
 registrations. A new clone would register two more tenants.
 
 To run more steps by hand afterwards, in the same terminal, activate the
-tools, point the CLI at the demo's home and rerun the first block of step 3,
-which only reads status:
+tools and point the CLI at the demo's home with the two lines below, then
+rerun the first block of step 3, which only reads status:
 
 ```sh
 . .aac-tools/bin/activate
