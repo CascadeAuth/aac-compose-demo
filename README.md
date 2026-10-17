@@ -98,6 +98,9 @@ AAC_CLI_HOME="$PWD/.local/aac" ./demo run fresh-authority
 AAC_CLI_HOME="$PWD/.local/aac" ./demo down
 ```
 
+Each run also prints an `aeg render` command for its graph. `aeg` is in the
+quickstart's tools, so run that command after the two setup lines below.
+
 To work through the later steps by hand instead, use a terminal dedicated to
 the demo, as step 1 does: activate the tools and point the CLI at the demo's
 home with the two lines below, then rerun the first block of step 3, which
