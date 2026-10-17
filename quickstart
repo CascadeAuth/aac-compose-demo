@@ -128,8 +128,13 @@ if [ "$OPENED" = no ]; then
   echo "No browser opened here. The graph is one file that opens with no server, so"
   echo "copy it to a machine that has a browser. On that machine, from a Multipass VM:"
   echo "  multipass transfer \"$HOSTNAME:$PWD/$GRAPH\" ~/Downloads/"
-  echo "or from a server you reach with SSH:"
-  echo "  scp \"$USER@<this machine's address>:$PWD/$GRAPH\" ~/Downloads/"
+  # Over SSH, the address this session arrived on; IPv6 needs brackets in scp.
+  ADDRESS="<this machine's address>"
+  if [ -n "$SSH_CONNECTION" ]; then ADDRESS=$(echo "$SSH_CONNECTION" | cut -d' ' -f3); fi
+  case "$ADDRESS" in *:*) ADDRESS="[$ADDRESS]" ;; esac
+  echo "or from a server you reach with SSH (if this address does not work, use the"
+  echo "name you ssh to):"
+  echo "  scp \"$USER@$ADDRESS:$PWD/$GRAPH\" ~/Downloads/"
 fi
 echo
 echo "Quickstart demo completed successfully."
