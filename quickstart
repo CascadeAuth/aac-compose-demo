@@ -122,7 +122,7 @@ echo
 echo "Done in ${SECONDS}s. Your execution graph (open it in a browser if it did not open):"
 echo "  $PWD/$GRAPH"
 echo
-echo "You're done; nothing else is required."
+echo "Quickstart demo completed successfully."
 echo
 echo "The two agents are still running in Docker. When you want to stop them,"
 echo "run this in the aac-compose-demo folder:"
