@@ -117,10 +117,20 @@ aeg render --mint-response "$MINT" \
 
 # The README commands are done; the rest only opens the graph and reports.
 set +x
-xdg-open "$GRAPH" >/dev/null 2>&1 || open "$GRAPH" >/dev/null 2>&1 || true
+OPENED=no
+if xdg-open "$GRAPH" >/dev/null 2>&1 || open "$GRAPH" >/dev/null 2>&1; then OPENED=yes; fi
 echo
 echo "Done in ${SECONDS}s. Your execution graph (open it in a browser if it did not open):"
 echo "  $PWD/$GRAPH"
+if [ "$OPENED" = no ]; then
+  # A server or VM without a desktop: the graph is one file, so copy it out.
+  echo
+  echo "No browser opened here. The graph is one file that opens with no server, so"
+  echo "copy it to a machine that has a browser. On that machine, from a Multipass VM:"
+  echo "  multipass transfer \"$(hostname):$PWD/$GRAPH\" ~/Downloads/"
+  echo "or from a server you reach with SSH:"
+  echo "  scp \"$USER@<this machine's address>:$PWD/$GRAPH\" ~/Downloads/"
+fi
 echo
 echo "Quickstart demo completed successfully."
 echo

@@ -57,7 +57,9 @@ quickstart from a fresh clone. It runs steps 1 to 4 below exactly as written,
 printing each command before it runs (the trust sections it appends in step 3
 show only as `cat`; their text is in the script), then renders the execution
 graph and opens it in your browser where one is available. It runs the
-reservation scenario only.
+reservation scenario only. On a machine without a browser, such as a server or
+VM, it says so and prints how to copy the graph to one that has a browser: the
+graph is one file that opens with no server.
 
 Before you run it, check the two versions that matter:
 
