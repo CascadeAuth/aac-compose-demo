@@ -102,10 +102,10 @@ def wait_for_publication(agent):
         public = json.dumps(json.loads(status.stdout)) if status.stdout else ""
         if '"contains_root_key_id": true' in public and '"contains_ca_anchor_id": true' in public:
             return
-        if time.monotonic() >= deadline:
+        time.sleep(2)
+        if time.monotonic() >= deadline:  # checked after the pause, so no check starts past the deadline
             raise RuntimeError(f"Public keys not visible for {agent}; inspect its publisher logs"
                                + (f"\nThe last status check said:\n{status.stderr}" if status.stderr else ""))
-        time.sleep(2)
 
 
 def main():

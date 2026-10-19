@@ -235,6 +235,19 @@ def test_wait_for_publication_retries_a_failed_status_check(synthetic_home, monk
     assert answers == []
 
 
+def test_wait_for_publication_starts_no_check_after_the_deadline(synthetic_home, monkeypatch):
+    module = load_demo("demo_wait_cutoff", synthetic_home, monkeypatch)
+    checks = []
+    monkeypatch.setattr(module.subprocess, "run", lambda argv, **kwargs:
+                        (checks.append(argv), SimpleNamespace(returncode=0, stdout=published(True, False), stderr=""))[1])
+    monkeypatch.setattr(module.time, "sleep", lambda seconds: None)
+    clock = iter([0, 150, 300])  # the deadline is taken; the pause after the second check reaches it
+    monkeypatch.setattr(module.time, "monotonic", lambda: next(clock))
+    with pytest.raises(RuntimeError):
+        module.wait_for_publication("booking")
+    assert len(checks) == 2
+
+
 def test_wait_for_publication_reports_the_last_error_at_the_deadline(synthetic_home, monkeypatch):
     module = load_demo("demo_wait_deadline", synthetic_home, monkeypatch)
     monkeypatch.setattr(module.subprocess, "run", lambda argv, **kwargs:
