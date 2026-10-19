@@ -237,15 +237,26 @@ def test_wait_for_publication_retries_a_failed_status_check(synthetic_home, monk
 
 def test_wait_for_publication_starts_no_check_after_the_deadline(synthetic_home, monkeypatch):
     module = load_demo("demo_wait_cutoff", synthetic_home, monkeypatch)
+    # A clock that moves while the wait works: each status check takes a second and each pause two, so the
+    # hundredth check ends at 298 s and the pause after it reaches the 300 s deadline. A check that started then
+    # would see the keys published (a success the deadline should have cut off).
+    clock = {"now": 0}
     checks = []
-    monkeypatch.setattr(module.subprocess, "run", lambda argv, **kwargs:
-                        (checks.append(argv), SimpleNamespace(returncode=0, stdout=published(True, False), stderr=""))[1])
-    monkeypatch.setattr(module.time, "sleep", lambda seconds: None)
-    clock = iter([0, 150, 300])  # the deadline is taken; the pause after the second check reaches it
-    monkeypatch.setattr(module.time, "monotonic", lambda: next(clock))
+
+    def status_check(argv, **kwargs):
+        checks.append(argv)
+        clock["now"] += 1
+        return SimpleNamespace(returncode=0, stdout=published(True, len(checks) > 100), stderr="")
+
+    def pause(seconds):
+        clock["now"] += seconds
+
+    monkeypatch.setattr(module.subprocess, "run", status_check)
+    monkeypatch.setattr(module.time, "sleep", pause)
+    monkeypatch.setattr(module.time, "monotonic", lambda: clock["now"])
     with pytest.raises(RuntimeError):
         module.wait_for_publication("booking")
-    assert len(checks) == 2
+    assert len(checks) == 100
 
 
 def test_wait_for_publication_reports_the_last_error_at_the_deadline(synthetic_home, monkeypatch):
