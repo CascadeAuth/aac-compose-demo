@@ -2,7 +2,7 @@
 """Compose convenience only; use the ordinary AAC CLI for setup and maintenance.
 
 ./demo prepare                      select current releases and install CLI
-./demo renew                        renew expired development certificates before a rerun
+./demo renew                        renew expired development certificates; ./demo up loads them
 ./demo up                           start both registered/configured pairs
 ./demo run [reservation|fare-change|fresh-authority|local-widening]
 ./demo compose <trip-planner|booking> <docker compose arguments...>
@@ -75,7 +75,7 @@ def renew_expired(agent):
     certificates = json.loads(status.stdout)["certificates"]
     if "dev_ca" not in certificates:
         return False  # certificates your own issuer signed are renewed with its files (README section 6)
-    if certificates["dev_ca"]["expired"] or certificates["dev_ca"]["renew_now"]:
+    if certificates["dev_ca"]["renew_now"]:  # true for an expired CA too
         # `aac agent renew` would reissue the CA as well, so the demo stops here instead of renewing.
         raise SystemExit(f"{agent}: its development CA has expired or is about to, so renewing replaces the CA, which "
                          f"must then be published and trusted by the peer.\n"
@@ -97,8 +97,9 @@ def wait_for_publication(agent):
         # so a failed check is retried like a key that is not published yet.
         status = subprocess.run(["aac", "agent", "status", "--agent", local_name(agent), "--remote", "--output", "json"],
                                 cwd=REPO, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        # The supported status fields identify this agent's current public keys.
-        public = json.dumps(json.loads(status.stdout)) if status.returncode == 0 else ""
+        # The supported status fields identify this agent's current public keys. The report is printed even when
+        # `status` exits 3 for an agent that needs attention; only a refusal prints nothing (and says why on stderr).
+        public = json.dumps(json.loads(status.stdout)) if status.stdout else ""
         if '"contains_root_key_id": true' in public and '"contains_ca_anchor_id": true' in public:
             return
         if time.monotonic() >= deadline:
@@ -118,8 +119,8 @@ def main():
     elif args[0] == "compose":
         compose(args[1], *args[2:])
     elif args[0] == "renew":
-        for agent in AGENTS:
-            renew_expired(agent)
+        if any([renew_expired(agent) for agent in AGENTS]):
+            print("Run ./demo up so the sidecars load the renewed certificates")
     elif args[0] == "up":
         for agent in AGENTS:
             renew_expired(agent)  # the recreation below loads the renewed certificates

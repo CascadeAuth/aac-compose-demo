@@ -139,13 +139,34 @@ def test_renew_leaves_valid_certificates_alone(synthetic_home, monkeypatch, caps
 
 def test_renew_stops_at_the_ca_case_with_the_readme_commands(synthetic_home, monkeypatch):
     module = load_demo("demo_renew_ca", synthetic_home, monkeypatch)
-    for dev_ca in ({"renew_now": True}, {"expired": True, "renew_now": True}):
+    for dev_ca in ({"renew_now": True}, {"expired": True, "renew_now": True}):  # inside its window; already expired
         calls = stub_cli(module, monkeypatch, status_document(dev_ca=dev_ca, workload={"expired": True}))
         with pytest.raises(SystemExit) as stopped:
             module.renew_expired("booking")
         assert "aac agent renew --agent booking --ca" in str(stopped.value)
         assert "./demo compose booking up -d --force-recreate publisher" in str(stopped.value)
         assert [argv[2] for argv in calls] == ["status"]
+
+
+def test_renew_leaves_certificates_your_own_issuer_signed_to_that_issuer(synthetic_home, monkeypatch, capsys):
+    module = load_demo("demo_renew_supplied", synthetic_home, monkeypatch)
+    document = status_document(workload={"expired": True, "renew_now": True})
+    document["certificates"]["ca"] = document["certificates"].pop("dev_ca")  # the CLI's label for a supplied CA
+    calls = stub_cli(module, monkeypatch, document)
+    assert module.renew_expired("booking") is False
+    assert [argv[2] for argv in calls] == ["status"]
+    assert capsys.readouterr().out == ""
+
+
+def test_renew_command_says_what_loads_the_renewed_certificates(synthetic_home, monkeypatch, capsys):
+    module = load_demo("demo_renew_command", synthetic_home, monkeypatch)
+    monkeypatch.setattr(module, "renew_expired", lambda agent: agent == "trip-planner")
+    monkeypatch.setattr(module.sys, "argv", ["demo", "renew"])
+    module.main()
+    assert capsys.readouterr().out == "Run ./demo up so the sidecars load the renewed certificates\n"
+    monkeypatch.setattr(module, "renew_expired", lambda agent: False)
+    module.main()
+    assert capsys.readouterr().out == ""
 
 
 def test_renew_passes_on_the_exit_code_when_the_cli_cannot_report(synthetic_home, monkeypatch):
@@ -205,7 +226,7 @@ def test_wait_for_publication_retries_a_failed_status_check(synthetic_home, monk
     module = load_demo("demo_wait_retry", synthetic_home, monkeypatch)
     answers = [SimpleNamespace(returncode=3, stdout="", stderr="agent needs attention\n"),
                SimpleNamespace(returncode=0, stdout=published(True, False), stderr=""),
-               SimpleNamespace(returncode=0, stdout=published(True, True), stderr="")]
+               SimpleNamespace(returncode=3, stdout=published(True, True), stderr="")]  # published; needs attention
     monkeypatch.setattr(module.subprocess, "run", lambda argv, **kwargs: answers.pop(0))
     monkeypatch.setattr(module.time, "sleep", lambda seconds: None)
     module.wait_for_publication("booking")

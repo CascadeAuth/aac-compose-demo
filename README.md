@@ -475,10 +475,11 @@ aac init --profile tourfedia --agent booking
 
 Leaf renewal keeps identities, root key, destinations and peer configuration.
 `aac agent status` shows when each certificate runs out. `./demo renew` runs
-the renewal below for each agent whose leaf certificates have expired and
-nothing else; `./demo up` and `./demo run` do the same before they start, and
-`run` recreates the renewed pair. To renew on demand, stop the affected pair
-before changing mounted material, then recreate it:
+`aac agent renew` for each agent whose leaf certificates have expired and
+nothing else, and `./demo up` then loads the new files; `up` and `./demo run`
+renew the same way before they start, and `run` recreates the renewed pair.
+To renew on demand, stop the affected pair before changing mounted material,
+then recreate it:
 
 ```sh
 ./demo compose booking stop sidecar agent
