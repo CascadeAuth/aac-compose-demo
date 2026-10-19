@@ -160,9 +160,11 @@ def test_renew_leaves_certificates_your_own_issuer_signed_to_that_issuer(synthet
 
 def test_renew_command_says_what_loads_the_renewed_certificates(synthetic_home, monkeypatch, capsys):
     module = load_demo("demo_renew_command", synthetic_home, monkeypatch)
-    monkeypatch.setattr(module, "renew_expired", lambda agent: agent == "trip-planner")
+    visited = []
+    monkeypatch.setattr(module, "renew_expired", lambda agent: (visited.append(agent), agent == "trip-planner")[1])
     monkeypatch.setattr(module.sys, "argv", ["demo", "renew"])
     module.main()
+    assert visited == ["trip-planner", "booking"]  # the second agent is renewed even after the first was
     assert capsys.readouterr().out == "Run ./demo up so the sidecars load the renewed certificates\n"
     monkeypatch.setattr(module, "renew_expired", lambda agent: False)
     module.main()

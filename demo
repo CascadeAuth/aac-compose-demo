@@ -119,7 +119,7 @@ def main():
     elif args[0] == "compose":
         compose(args[1], *args[2:])
     elif args[0] == "renew":
-        if any([renew_expired(agent) for agent in AGENTS]):
+        if any([renew_expired(agent) for agent in AGENTS]):  # a list, so both agents are renewed
             print("Run ./demo up so the sidecars load the renewed certificates")
     elif args[0] == "up":
         for agent in AGENTS:
