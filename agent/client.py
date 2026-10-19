@@ -23,7 +23,7 @@ def start_body(scenario: str, task: str) -> dict:
     amount = 9500 if scenario == "fresh-authority" else 8000
     # Initial amount has one source: this simulated application approval.
     # Class valid_for supplies +2h; the destination supplies +30m.
-    return {"human_originator": {"iss": "https://vantis.invalid/simulated", "sub": "marc-sterling",
+    return {"human_originator": {"iss": "https://login.vantis.example", "sub": "marc-sterling",
                                  "auth_time_unix_seconds": int(time.time())},
             "class_of_action": "reserve_travel", "task_ref": task,
             "obligations": [{"predicate": "amount_max", "value": "10000"},

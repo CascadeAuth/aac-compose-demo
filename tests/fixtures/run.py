@@ -35,7 +35,7 @@ def starts():
             task = "negative-" + uuid.uuid4().hex
             before = rows("vantis", "telemetry.jsonl")
             actions = rows("vantis", "actions.jsonl")
-            body = json.dumps({"human_originator": {"iss": "https://vantis.invalid/simulated",
+            body = json.dumps({"human_originator": {"iss": "https://login.vantis.example",
                                 "sub": "marc-sterling", "auth_time_unix_seconds": int(time.time())},
                                "class_of_action": "reserve_travel", "task_ref": task,
                                "obligations": [{"predicate": "amount_max", "value": "10000"}]}).encode()
