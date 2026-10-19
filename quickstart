@@ -37,6 +37,10 @@ mkdir -p .local
 export AAC_CLI_HOME="$PWD/.local/aac"
 cp config/trip-planner.yaml .local/trip-planner.yaml
 cp config/booking.yaml .local/booking.yaml
+# A rerun only: the development certificates expire (README section 6), and
+# step 2 refuses an agent with an expired one. This renews the expired ones
+# and says so; a first run has nothing to renew and prints nothing.
+./demo renew
 
 : "== 2. Register two tenants (${SECONDS}s so far)"
 aac init \
