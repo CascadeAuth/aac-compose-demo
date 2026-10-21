@@ -15,7 +15,11 @@ python3 ../aac-infra/bin/check-main-protection.py --repo CascadeAuth/aac-compose
 ```
 
 Use a current reviewed aac-infra checkout and the owner's authenticated gh
-session with Administration read access. A drift or unknown-state result stops
+session. Classic-protection reads need Administration read access; complete
+ruleset reads also require visibility of bypass actors, which GitHub exposes
+only to callers with ruleset write access. The checker issues GET requests only
+and refuses an omitted bypass list instead of treating it as empty.
+A drift or unknown-state result stops
 the merge procedure; never bypass protection or silently replace the inventory
 with live settings. A saved snapshot is evidence, not a fresh merge preflight.
 Ordinary CI needs no administrator credential. The
