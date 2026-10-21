@@ -44,7 +44,11 @@ follows.
    setups or diagnostics commands. The two independent fictional tenants are
    the lesson, not a general multi-tenant deployment framework. When something goes
    wrong, the message from Docker or the CLI is the message; the README's
-   short troubleshooting list covers the common cases.
+   short troubleshooting list covers the common cases. Two exceptions,
+   adopted because a rerun a day later met the first and a fresh `up` met
+   the second: the demo renews expired development certificates before it
+   runs (`./demo renew`, also inside `up` and `run`), and `up`'s publication
+   wait retries a status check that fails right after the containers start.
 5. **The CLI is the only generator.** The example never creates, copies or
    edits keys, certificates or the sidecar configuration. It reads what
    `aac init` wrote.

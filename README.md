@@ -90,7 +90,12 @@ browser, two per tenant, and acknowledge each permanent tenant registration.
 Read [quickstart](quickstart) alongside steps 1 to 4: the steps explain what
 each command does and why. If a step fails, fix the cause and run the same
 command again, with both contact addresses, in the same clone; it reuses both
-registrations. A new clone would register two more tenants.
+registrations. A new clone would register two more tenants. The development
+certificates the CLI creates expire (section 6 says how renewal works): a
+rerun after that renews the expired ones before step 2 and prints what it
+renewed, and `./demo run` does the same before a scenario. When the
+development CA itself has expired or is about to, the rerun stops and prints
+the two commands from section 6 that replace and republish it.
 
 The demo keeps running in Docker until you stop it with `./demo down`. The
 quickstart's settings end with the script, so put the demo's CLI home in
@@ -275,7 +280,9 @@ refuse conflicting class/request values and any request-supplied
 ```
 
 `up` builds the small application image, starts the two pairs and their
-publishers, and waits for readiness and public trust publication.
+publishers, and waits for readiness and public trust publication, for up to
+five minutes; a publication check that fails right after the containers start
+is retried, and the last failure is shown if the deadline passes.
 `run` starts one task, then waits up to 30 seconds for correlated completion.
 Failure or missing evidence exits nonzero. A failed run shows the client's
 error, then the rows it printed before stopping, and exits with the client's
@@ -467,7 +474,12 @@ aac init --profile tourfedia --agent booking
 ```
 
 Leaf renewal keeps identities, root key, destinations and peer configuration.
-Stop the affected pair before changing mounted material, then recreate it:
+`aac agent status` shows when each certificate runs out. `./demo renew` runs
+`aac agent renew` for each agent whose leaf certificates have expired and
+nothing else, and `./demo up` then loads the new files; `up` and `./demo run`
+renew the same way before they start, and `run` recreates the renewed pair.
+To renew on demand, stop the affected pair before changing mounted material,
+then recreate it:
 
 ```sh
 ./demo compose booking stop sidecar agent
@@ -478,7 +490,10 @@ aac agent renew --agent booking
 ```
 
 CA renewal additionally requires public republication and explicit peer HTTPS
-trust refresh. Old published anchors remain until deliberately retired.
+trust refresh. Old published anchors remain until deliberately retired. The
+demo never renews a CA: when one has expired or is within its renewal window,
+`./demo renew`, `up` and `run` stop and print the two commands below that
+replace the CA and republish it.
 
 ```sh
 ./demo compose booking stop sidecar agent

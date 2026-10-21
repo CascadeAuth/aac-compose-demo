@@ -21,6 +21,9 @@ LEFT_OUT = {
     "./demo run fare-change",
     "./demo run fresh-authority",
 }
+# The one command the quickstart adds to the README's steps: it acts on a rerun
+# only, renewing the development certificates that expired since the first run.
+RERUN_ONLY = {"./demo renew"}
 
 
 def readme_step_lines():
@@ -36,11 +39,20 @@ def quickstart_step_lines():
     """The script's command lines from step 1 up to the graph, without headings, comments and trace switches."""
     script = (REPO / "quickstart").read_text()
     steps = script.split(': "== 1.', 1)[1].split(': "== View', 1)[0].splitlines()[1:]
-    return [line for line in steps if line.strip() and not line.startswith((": ", "set ", "#"))]
+    return [line for line in steps if line.strip() and not line.startswith((": ", "set ", "#")) and line not in RERUN_ONLY]
 
 
 def test_quickstart_runs_exactly_the_readme_steps():
     assert quickstart_step_lines() == readme_step_lines()
+
+
+def test_quickstart_renews_expired_certificates_after_the_cli_home_is_set_and_before_step_2():
+    script = (REPO / "quickstart").read_text().splitlines()
+    assert script.count("./demo renew") == 1
+    renew = script.index("./demo renew")
+    assert any(line.startswith("export AAC_CLI_HOME=") for line in script[:renew])
+    assert all(not line.startswith(': "== 2.') for line in script[:renew])
+    assert any(line.startswith(': "== 2.') for line in script[renew:])
 
 
 def quickstart_render_args(cli_home, mint):
@@ -61,6 +73,7 @@ def test_quickstart_renders_the_same_graph_as_demo_run(synthetic_home, tmp_path,
     spec = importlib.util.spec_from_loader(loader.name, loader)
     module = importlib.util.module_from_spec(spec); loader.exec_module(module)
     monkeypatch.setattr(module, "REPO", tmp_path)
+    monkeypatch.setattr(module, "renew_expired", lambda agent: False)  # nothing expired in the synthetic home
     started = {"root_token_id": "a" * 64, "task_ref": "attempt-1", "delivery_status": "delivered"}
     monkeypatch.setattr(module, "compose", lambda *a, **k: json.dumps({"mint": started}) + "\n")
     monkeypatch.setattr(module.sys, "argv", ["demo", "run", "reservation"])
