@@ -1,9 +1,17 @@
 # AAC: two tenants, one reservation made
 
 Marc Sterling, a director at Austin-based private equity firm Vantis Equity,
-needs to oversee an acquisition on-site in Shanghai. He uses Tourfedia's
-corporate travel management platform to organize his trip from Austin (AUS)
-to Shanghai (PVG).
+needs to travel to Shanghai to oversee an acquisition. He asks Vantis Equity's
+trip-planning AI agent to book his trip from Austin (AUS) to Shanghai (PVG)
+through Tourfedia's corporate travel booking AI agent, under a $10,000 approval
+that expires in 30 minutes. The planner agent does not hand Tourfedia a
+credential; it hands over Marc's approval itself. Vantis Equity's sidecar signs
+that approval as the root of a chain, the planner agent narrows it to this one
+booking and names Tourfedia's booking agent as the only agent allowed to act,
+and Tourfedia's sidecar verifies the whole chain locally before its booking
+agent sees the request. The booking ends in a signed receipt and an execution
+graph showing who authorized what, hop by hop. This repository runs that
+journey on your machine.
 
 Vantis Equity's trip-planner asks Tourfedia's booking workload to create a
 **reservation**. Each fictional organization has its own AAC
