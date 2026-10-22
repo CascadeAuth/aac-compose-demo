@@ -84,5 +84,7 @@ def test_readme_opening_states_aac_role():
     """The story paragraph must say what AAC does, not only who travels where."""
     readme = (ROOT / "README.md").read_text()
     story = " ".join(readme.split("\n\n")[1].split())
-    for phrase in ("root of a chain", "verifies the whole chain locally", "signed receipt", "execution graph"):
+    phrases = ("root of a chain", "verifies the whole chain locally",
+               "signed receipt", "execution graph")
+    for phrase in phrases:
         assert phrase in story
