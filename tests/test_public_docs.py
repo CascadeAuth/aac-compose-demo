@@ -78,3 +78,11 @@ def test_prescribed_journey_has_no_inline_python_and_uses_every_scalar():
     rendered = MarkdownIt("commonmark").render(text)
     assert "python -c" not in rendered and "value()" not in rendered
     assert "./demo prepare" in text and "components.json" in text
+
+
+def test_readme_opening_states_aac_role():
+    """The story paragraph must say what AAC does, not only who travels where."""
+    readme = (ROOT / "README.md").read_text()
+    story = " ".join(readme.split("\n\n")[1].split())
+    for phrase in ("root of a chain", "verifies the whole chain locally", "signed receipt", "execution graph"):
+        assert phrase in story
