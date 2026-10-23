@@ -143,13 +143,16 @@ fi
 echo
 echo "Quickstart demo completed successfully."
 echo
-echo "The two agents are still running in Docker. When you want to stop them,"
-echo "run this in the aac-compose-demo folder:"
-echo '  AAC_CLI_HOME="$PWD/.local/aac" ./demo down'
+echo "The two agents are still running in Docker. The tools this script installed"
+echo "and the demo's CLI home end with it, so in the aac-compose-demo folder first:"
+echo '  . .aac-tools/bin/activate'
+echo '  export AAC_CLI_HOME="$PWD/.local/aac"'
+echo "then stop the agents when you want to:"
+echo '  ./demo down'
 echo
 echo 'Optional, before stopping: README step 4 shows two more outcomes of the same'
 echo 'order. In one, the fare rises to $9,500, above the $8,000 Tourfedia may spend,'
 echo 'so it declines. In the other, Vantis grants fresh authority and the booking'
 echo 'succeeds:'
-echo '  AAC_CLI_HOME="$PWD/.local/aac" ./demo run fare-change'
-echo '  AAC_CLI_HOME="$PWD/.local/aac" ./demo run fresh-authority'
+echo '  ./demo run fare-change'
+echo '  ./demo run fresh-authority'

@@ -86,6 +86,15 @@ def test_quickstart_renders_the_same_graph_as_demo_run(synthetic_home, tmp_path,
         assert getattr(quickstart, field) == getattr(demo, field), field
 
 
+def test_the_printed_follow_up_activates_the_tools_before_any_demo_command():
+    """The quickstart's tools and CLI home end with the script; the commands it suggests need them back."""
+    script = (REPO / "quickstart").read_text()
+    follow_up = script.split("Quickstart demo completed successfully.", 1)[1]
+    commands = [line.split("'")[1].strip() for line in follow_up.splitlines() if line.startswith("echo '  ")]
+    assert commands[:2] == [". .aac-tools/bin/activate", 'export AAC_CLI_HOME="$PWD/.local/aac"']
+    assert all(command.startswith("./demo ") for command in commands[2:]) and len(commands) > 2
+
+
 def test_quickstart_is_an_executable_shell_script():
     path = REPO / "quickstart"
     assert os.access(path, os.X_OK)
