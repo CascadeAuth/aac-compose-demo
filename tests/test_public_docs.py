@@ -80,6 +80,16 @@ def test_prescribed_journey_has_no_inline_python_and_uses_every_scalar():
     assert "./demo prepare" in text and "components.json" in text
 
 
+def test_the_quickstart_follow_up_block_activates_the_tools_first():
+    """The follow-up commands run in the reader's shell, where the quickstart's tools and CLI home are gone."""
+    quickstart = (ROOT / "README.md").read_text().split("## Quickstart\n", 1)[1].split("\n## 1. ", 1)[0]
+    block = next(b for b in re.findall(r"```sh\n(.*?)```", quickstart, re.S) if "./demo run fare-change" in b)
+    lines = block.splitlines()
+    assert lines[:2] == [". .aac-tools/bin/activate", 'export AAC_CLI_HOME="$PWD/.local/aac"']
+    assert all(line.startswith("./demo ") for line in lines[2:]) and len(lines) > 2
+    assert 'AAC_CLI_HOME="$PWD/.local/aac" ./demo' not in quickstart
+
+
 def test_readme_opening_states_aac_role():
     """The story paragraph must say what AAC does, not only who travels where."""
     readme = (ROOT / "README.md").read_text()

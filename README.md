@@ -106,28 +106,23 @@ development CA itself has expired or is about to, the rerun stops and prints
 the two commands from section 6 that replace and republish it.
 
 The demo keeps running in Docker until you stop it with `./demo down`. The
-quickstart's settings end with the script, so put the demo's CLI home in
-front of each later command; that changes nothing else in your terminal.
-Step 4 explains the two other scenarios:
-
-```sh
-AAC_CLI_HOME="$PWD/.local/aac" ./demo run fare-change
-AAC_CLI_HOME="$PWD/.local/aac" ./demo run fresh-authority
-AAC_CLI_HOME="$PWD/.local/aac" ./demo down
-```
-
-Each run also prints an `aeg render` command for its graph. `aeg` is in the
-quickstart's tools, so run that command after the two setup lines below.
-
-To work through the later steps by hand instead, use a terminal dedicated to
-the demo, as step 1 does: activate the tools and point the CLI at the demo's
-home with the two lines below, then rerun the first block of step 3, which
-only reads status:
+tools the quickstart installed and the demo's CLI home end with the script,
+so in a terminal dedicated to the demo, activate the tools and point the CLI
+at the demo's home first, as step 1 does; every later command, including the
+two other scenarios step 4 explains and the stop, then runs as written:
 
 ```sh
 . .aac-tools/bin/activate
 export AAC_CLI_HOME="$PWD/.local/aac"
+./demo run fare-change
+./demo run fresh-authority
+./demo down
 ```
+
+Each run also prints an `aeg render` command for its graph; `aeg` is in the
+quickstart's tools, so that command runs in the same terminal. To work
+through the later steps by hand instead, start from the same two lines and
+rerun the first block of step 3, which only reads status.
 
 ## 1. Install AAC CLI and prepare the example
 
